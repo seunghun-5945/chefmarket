@@ -25,39 +25,17 @@ const HomeStack = () => {
        tabBarInactiveTintColor: 'gray',
      }}
    >
-     <Tab.Screen 
-       name="홈" 
-       component={Home}
-       options={({ navigation }) => ({
-         headerTitle: "홈",
-         headerShown: true,
-         headerRight: () => (
-           <View style={{ flexDirection: 'row', marginRight: 15 }}>
-             <TouchableOpacity 
-               onPress={() => navigation.navigate('HomeModal')}
-               style={{ marginHorizontal: 10 }}
-             >
-               <Icon name="home" size={24} color="black" />
-             </TouchableOpacity>
-             <TouchableOpacity 
-               onPress={() => navigation.navigate('MapModal')}
-               style={{ marginHorizontal: 10 }}
-             >
-               <Icon name="map" size={24} color="black" />
-             </TouchableOpacity>
-             <TouchableOpacity 
-               onPress={() => navigation.navigate('ProfileModal')}
-               style={{ marginHorizontal: 10 }}
-             >
-               <Icon name="person" size={24} color="black" />
-             </TouchableOpacity>
-           </View>
-         ),
-         tabBarIcon: ({ color, size }) => (
-           <Icon name="home" size={size} color={color} />
-         ),
-       })}
-     />
+    <Tab.Screen 
+      name="홈" 
+      component={Home}
+      options={{
+        headerTitle: "홈",
+        tabBarIcon: ({ color, size }) => (
+          <Icon name="home" size={size} color={color} />
+        ),
+      }}
+    />
+
      <Tab.Screen 
        name="식료품탐색" 
        component={FoodMap}
@@ -74,7 +52,7 @@ const HomeStack = () => {
        options={{
          headerTitle: "레시피",
          tabBarIcon: ({ color, size }) => (
-           <Icon name="restaurant-menu" size={size} color={color} />
+           <Icon name="flask" size={size} color={color} />
          ),
        }}
      />
