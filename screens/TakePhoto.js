@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Button, Image, StyleSheet, Text } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
-const App = () => {
+const TakePhoto = () => {
   const [imageUri, setImageUri] = useState(null);
 
   const pickImageFromLibrary = () => {
@@ -64,4 +64,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export default TakePhoto;

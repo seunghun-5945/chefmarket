@@ -14,6 +14,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
+    "axios": "^1.7.9",
     "react": "18.3.1",
     "react-native": "0.76.6",
     "react-native-gesture-handler": "^2.22.0",
@@ -22,6 +23,7 @@
     "react-native-screens": "^4.5.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-video": "^6.9.1",
+    "react-native-web-swiper": "^2.2.4",
     "react-native-webview": "^13.13.1",
     "styled-components": "^6.1.14"
   },

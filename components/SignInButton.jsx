@@ -30,7 +30,7 @@ const TextArea = styled.View`
 
 const ButtonText = styled.Text`
   color: ${props => props.color || 'black'};
-  font-size: 15;
+  font-size: 15px;
 `;
 
 const SignInButton = ({ 

@@ -12,6 +12,7 @@ import FoodMap from "./screens/FoodMap";
 import Profile from "./screens/Profile";
 import Recipe from "./screens/Recipe"; 
 import Trade from "./screens/Trade";
+import TakePhoto from "./screens/TakePhoto";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -87,7 +88,7 @@ const App = () => {
 
  return (
    <NavigationContainer>
-     <Stack.Navigator initialRouteName="Landing">
+     <Stack.Navigator initialRouteName="Home">
        <Stack.Screen 
          name="Landing" 
          component={Landing} 
