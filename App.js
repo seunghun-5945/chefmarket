@@ -13,6 +13,7 @@ import Profile from "./screens/Profile";
 import Recipe from "./screens/Recipe"; 
 import Trade from "./screens/Trade";
 import TakePhoto from "./screens/TakePhoto";
+import Chat from "./screens/Chat";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,7 +23,7 @@ const HomeStack = () => {
  return (
    <Tab.Navigator
      screenOptions={{
-       tabBarActiveTintColor: '#e91e63',
+       tabBarActiveTintColor: '#eHomeModal91e63',
        tabBarInactiveTintColor: 'gray',
      }}
    >
@@ -36,14 +37,13 @@ const HomeStack = () => {
         ),
       }}
     />
-
      <Tab.Screen 
-       name="식료품탐색" 
-       component={FoodMap}
+       name="식료품거래" 
+       component={Trade}
        options={{
-         headerTitle: "식료품탐색",
+         headerTitle: "식료품거래",
          tabBarIcon: ({ color, size }) => (
-           <Icon name="map" size={size} color={color} />
+           <Icon name="cart" size={size} color={color} />
          ),
        }}
      />
@@ -58,12 +58,12 @@ const HomeStack = () => {
        }}
      />
      <Tab.Screen 
-       name="식료품거래" 
-       component={Trade}
+       name="채팅" 
+       component={Chat}
        options={{
-         headerTitle: "식료품거래",
+         headerTitle: "채팅목록",
          tabBarIcon: ({ color, size }) => (
-           <Icon name="cart" size={size} color={color} />
+           <Icon name="chatbubble-ellipses-outline" size={size} color={color} />
          ),
        }}
      />
@@ -117,32 +117,14 @@ const App = () => {
            headerShown: false,
          }}
        />
-
-
-       {/* 모달 스크린들 */}
-       <Stack.Group screenOptions={{ presentation: 'modal' }}>
-         <Stack.Screen 
-           name="HomeModal" 
-           component={Home}
-           options={{
-             headerTitle: "홈 모달",
-           }}
-         />
-         <Stack.Screen 
-           name="MapModal" 
-           component={FoodMap}
-           options={{
-             headerTitle: "맛집지도 모달",
-           }}
-         />
-         <Stack.Screen 
-           name="ProfileModal" 
-           component={Profile}
-           options={{
-             headerTitle: "프로필 모달",
-           }}
-         />
-       </Stack.Group>
+       <Stack.Screen 
+         name="Chat" 
+         component={Chat}
+         options={{ 
+           headerShown: true,
+           headerTitle: "채팅",
+         }}
+       />
      </Stack.Navigator>
    </NavigationContainer>
  );

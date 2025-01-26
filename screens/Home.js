@@ -44,10 +44,9 @@ const Home = () => {
       headerRight: () => (
         <View style={{ flexDirection: "row", marginRight: 15 }}>
           <TouchableOpacity 
-            onPress={() => navigation.navigate("HomeModal")} 
-            style={{ marginHorizontal: 10 }}
+            onPress={() => navigation.navigate("Chat")} 
           >
-            <Icon name="menu" size={24} color="black" />
+            <Icon name="chatbubble-ellipses-outline" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => navigation.navigate("MapModal")} 
@@ -91,7 +90,15 @@ const Home = () => {
     <Container>
       <TopFrame>
         <StyledText>🍳오늘의 추천 레시피</StyledText>
-        <Swiper loop timeout={3} controlsEnabled={false} containerStyle={{ flex: 1 }}>
+        <Swiper 
+          from={0}
+          loop 
+          timeout={3}
+          springConfig={{ speed: 11 }}
+          minDistanceForAction={0.1}
+          controlsEnabled={false}
+          containerStyle={{ flex: 1 }}
+        >
           {images.map((image, index) => (
             <View key={index} style={{ flex: 1 }}>
               <Image 
