@@ -13,7 +13,9 @@ import Profile from "./screens/Profile";
 import Recipe from "./screens/Recipe"; 
 import Trade from "./screens/Trade";
 import TakePhoto from "./screens/TakePhoto";
+import ChatRoom from "./screens/ChatRoom";
 import Chat from "./screens/Chat";
+import RegistProduct from "./screens/RegistProduct";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,7 +61,7 @@ const HomeStack = () => {
      />
      <Tab.Screen 
        name="채팅" 
-       component={Chat}
+       component={ChatRoom}
        options={{
          headerTitle: "채팅목록",
          tabBarIcon: ({ color, size }) => (
@@ -118,13 +120,29 @@ const App = () => {
          }}
        />
        <Stack.Screen 
-         name="Chat" 
-         component={Chat}
+         name="ChatRoom" 
+         component={ChatRoom}
          options={{ 
            headerShown: true,
-           headerTitle: "채팅",
+           headerTitle: "채팅방",
          }}
        />
+        <Stack.Screen 
+          name="Chat" 
+          component={Chat}
+          options={{ 
+            headerShown: true,
+            headerTitle: "채팅",
+          }}
+        />
+        <Stack.Screen
+          name="RegistProduct"
+          component={RegistProduct}
+          options={{
+            headerShow: true,
+            headerTitle: "상품등록",
+          }}
+        />
      </Stack.Navigator>
    </NavigationContainer>
  );
