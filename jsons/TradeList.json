@@ -1,0 +1,54 @@
+{
+  "TradeList": [
+    {
+      "id": 1,
+      "imageUrl": "https://img1.daumcdn.net/thumb/R1280x0/?fname=http://t1.daumcdn.net/brunch/service/user/fv00/image/24VXzJOiAxtt6hE59p1yGOZDdsQ.jpg",
+      "title": "감자 3kg 고구마3kg로 교환 원해요",
+      "distance": "0.5km",
+      "location": "서울시 강남구",
+      "uploadTime": "2024/02/03 13:30",
+      "wantItems": ["양파", "당근", "배추"],
+      "category": "농산물"
+    },
+    {
+      "id": 2,
+      "imageUrl": "https://www.news1.kr/_next/image?url=https%3A%2F%2Fi3n.news1.kr%2Fsystem%2Fphotos%2F2018%2F8%2F15%2F3254079%2Fhigh.jpg&w=1920&q=75",
+      "title": "제주 생갈치 2마리",
+      "distance": "1.2km",
+      "location": "서울시 서초구",
+      "uploadTime": "2024/02/03 13:30",
+      "wantItems": ["고등어", "전복", "광어"],
+      "category": "수산물"
+    },
+    {
+      "id": 3,
+      "imageUrl": "https://m.hanwoomom.com/web/product/big/202405/9617ede1e63e912061457b912b73b269.png",
+      "title": "한우 1++ 등심 500g",
+      "distance": "0.8km",
+      "location": "서울시 송파구",
+      "uploadTime": "2024/02/03 13:30",
+      "wantItems": ["돼지고기 삼겹살", "닭고기"],
+      "category": "축산물"
+    },
+    {
+      "id": 4,
+      "imageUrl": "https://gdimg.gmarket.co.kr/4212099522/still/280?ver=1737542719",
+      "title": "통배추 2포기",
+      "distance": "2.1km",
+      "location": "서울시 강동구",
+      "uploadTime": "2024/02/03 13:30",
+      "wantItems": ["양파", "대파", "마늘"],
+      "category": "농산물"
+    },
+    {
+      "id": 5,
+      "imageUrl": "https://m.jaeilmall.co.kr/web/product/big/202306/e7d5ae8e98feef7bd2ce93a14d464e08.png",
+      "title": "제철 문어 2kg",
+      "distance": "1.5km",
+      "location": "서울시 마포구",
+      "uploadTime": "2024/02/03 13:30",
+      "wantItems": ["광어", "연어", "고등어"],
+      "category": "수산물"
+    }
+  ]
+}

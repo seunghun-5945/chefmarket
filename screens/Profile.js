@@ -5,6 +5,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 import styled from "styled-components/native";
 import Icon2 from "react-native-vector-icons/MaterialIcons";
 import Icon3 from "react-native-vector-icons/MaterialCommunityIcons";
+// import Logo from "../assets/testImage/chefLogo.png";
 
 const Container = styled.View`
   flex: 1;
@@ -19,19 +20,19 @@ const ImageFrame = styled.View`
   background-color: white;
 `;
 
-const Image = styled.View`
+const StyledImage = styled.Image.attrs({
+  resizeMode: "cover"
+})`
   width: 120px;
   height: 120px;
-  background-color: lightgray;
-  border-radius: 50%;
-  border: 1px solid red;
+  border-radius: 60px;
 `;
 
 const EditButton = styled.TouchableOpacity`
   width: 20px;
   height: 20px;
   border: 1px solid black;
-  border-radius: 50%;
+  border-radius: 100px;
 `;
 
 const Reliabillity = styled.View`
@@ -44,7 +45,6 @@ const Reliabillity = styled.View`
 const IconContainer = styled.View`
   flex: 3;
   flex-direction: row;
-
   justify-content: space-around;
   flex-wrap: wrap;
   gap: 3px;
@@ -88,8 +88,10 @@ const Profile = () => {
   return (
     <Container>
       <ImageFrame>
-        <Image />
-        {/* <EditButton /> */}
+        <StyledImage 
+          source={require("../assets/testImage/chefLogo.png")} 
+          resizeMode="cover" 
+        />
         <Text style={{fontSize:25}}>이승훈</Text>
       </ImageFrame>
       <Reliabillity>
@@ -108,11 +110,26 @@ const Profile = () => {
         <Icon3 name="food-variant" size={30} color="gray" />
         <Text style={{textAlign:"center"}}>내가 올린 레시피</Text>
        </IconFrame>
-        <IconFrame />
-        <IconFrame />
-        <IconFrame />
-        <IconFrame />
-        <IconFrame />
+       <IconFrame>
+        <Icon3 name="food-apple" size={30} color="red" />
+        <Text style={{textAlign:"center"}}>보관중인 식재료</Text>
+       </IconFrame>
+       <IconFrame>
+        <Icon3 name="food-variant" size={30} color="gray" />
+        <Text style={{textAlign:"center"}}>구독중인 셰프</Text>
+       </IconFrame>
+       <IconFrame>
+        <Icon3 name="food-variant" size={30} color="gray" />
+        <Text style={{textAlign:"center"}}>내가 올린 레시피</Text>
+       </IconFrame>
+       <IconFrame>
+        <Icon3 name="food-variant" size={30} color="gray" />
+        <Text style={{textAlign:"center"}}>내가 올린 레시피</Text>
+       </IconFrame>
+       <IconFrame>
+        <Icon3 name="food-variant" size={30} color="gray" />
+        <Text style={{textAlign:"center"}}>내가 올린 레시피</Text>
+       </IconFrame>
       </IconContainer>
       <EtcFrame>
         <Text>여긴 뭘 넣을지 고민중</Text>

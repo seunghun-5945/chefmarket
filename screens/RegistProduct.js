@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { TouchableOpacity, View, ScrollView, Text, Platform, PermissionsAndroid } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import styled from "styled-components/native";
-import Icon from "react-native-vector-icons/MaterialIcons"
+import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon2 from "react-native-vector-icons/MaterialCommunityIcons";
 
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
@@ -33,7 +34,7 @@ const SelectedImage = styled.Image`
   border-radius: 5px;
 `;
 
-const CameraButton = styled.TouchableOpacity`
+const StyledButton = styled.TouchableOpacity`
   flex-direction: row;
   border-radius: 5px;
   margin-right: 10px;
@@ -51,7 +52,6 @@ const ButtonText = styled.Text`
 const ButtonContainer = styled.View`
   flex-direction: row;
   padding: 10px 10px 10px 0px;
-  border: 1px solid red;
 `;
 
 const StyledText = styled.Text` 
@@ -222,14 +222,13 @@ const RegistProduct = () => {
         <ScrollContainer>
         <StyledText>사진 등록</StyledText>
         <ButtonContainer>
-          <CameraButton onPress={checkCameraPermission}>
+          <StyledButton onPress={checkCameraPermission}>
             <Icon name="add-photo-alternate" size={30} color="gray"/>
-            <ButtonText></ButtonText>
-          </CameraButton>
-          <CameraButton onPress={checkGalleryPermission}>
+          </StyledButton>
+          <StyledButton onPress={checkGalleryPermission}>
             <Icon name="add-a-photo" size={30} color="gray"/>
             <ButtonText>({images.length}/5)</ButtonText>
-          </CameraButton>
+          </StyledButton>
         </ButtonContainer>
 
           <ImageContainer>
@@ -260,7 +259,20 @@ const RegistProduct = () => {
             multiline={true}
           />
           <StyledText>희망 장소</StyledText>  
-          <Text>내 위치</Text><Text>내 위치</Text><Text>내 위치</Text>
+          <ButtonContainer>
+            <StyledButton>
+              <Icon name="gps-fixed" size={30} color="gray"/>
+              <ButtonText>내위치</ButtonText>
+            </StyledButton>
+            <StyledButton>
+              <Icon name="search" size={30} color="gray"/>
+              <ButtonText>주소검색</ButtonText>
+            </StyledButton>
+            <StyledButton>
+              <Icon2 name="map-marker-radius" size={30} color="gray"/>
+              <ButtonText>지도찾기</ButtonText>
+            </StyledButton>
+          </ButtonContainer>
           </ScrollContainer>
           <RegistButtonContainer>
             <RegistButton>

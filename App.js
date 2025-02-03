@@ -16,6 +16,7 @@ import TakePhoto from "./screens/TakePhoto";
 import ChatRoom from "./screens/ChatRoom";
 import Chat from "./screens/Chat";
 import RegistProduct from "./screens/RegistProduct";
+import DetailProduct from "./screens/DetailProduct";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -139,8 +140,16 @@ const App = () => {
           name="RegistProduct"
           component={RegistProduct}
           options={{
-            headerShow: true,
+            headerShown: true,
             headerTitle: "상품등록",
+          }}
+        />
+        <Stack.Screen
+          name="DetailProduct"
+          component={DetailProduct}
+          options={{
+            headerShown: true,
+            headerTitle: ""
           }}
         />
      </Stack.Navigator>
