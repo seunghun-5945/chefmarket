@@ -105,8 +105,8 @@ const Ingredient = ({ product }) => {
         <TradeProductText>{product.wantItems.join(', ')}</TradeProductText>
       </ExplainArea>
       <ButtonArea>
-        <TouchableOpacity onPress={() => Alert.alert("Report", "Would you like to report this item?")}>
-          <Icon name="ellipsis-vertical" size={20} />
+        <TouchableOpacity onPress={() => Alert.alert("신고하기", "해당 게시물을 신고하시겠습니까?")}>
+          <Icon name="ellipsis-vertical" size={20} />   
         </TouchableOpacity>
       </ButtonArea>
     </IngredientFrame>
@@ -119,7 +119,7 @@ const Trade = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: "row", marginRight: 15 }}>
+        <View style={{ flexDirection: "row" }}>
           <TouchableOpacity 
             // 빈 상품 데이터와 함께 이동하거나, 새로운 상품 등록 화면으로 이동
             onPress={() => navigation.navigate("RegistProduct")}

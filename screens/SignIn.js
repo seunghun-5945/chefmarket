@@ -3,6 +3,7 @@ import styled from "styled-components/native";
 import { Text, Keyboard, Platform, Alert, TouchableOpacity, View, Dimensions } from "react-native";
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 
 const Container = styled.SafeAreaView`
   flex: 1;
@@ -95,7 +96,7 @@ const ErrorText = styled.Text`
 
 const SignIn = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPw] = useState("");
   const [arrayIndex, setArrayIndex] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -104,16 +105,16 @@ const SignIn = () => {
   const navigation = useNavigation();
 
   const titleTextArray = [
-    "이메일을 입력해 주세요",
+    "아이디를 입력해 주세요",
     "비밀번호를 확인합니다",
   ];
   
   const placeHolderArray = [
-    "이메일",
+    "아이디",
     "비밀번호",
   ];
   
-  const valueArray = [email, password];
+  const valueArray = [username, password];
 
   useEffect(() => {
     const keyboardWillShow = (event) => {
@@ -122,7 +123,6 @@ const SignIn = () => {
       } else {
         const screenHeight = Dimensions.get('window').height;
         const keyboardHeight = event.endCoordinates.height;
-        // Android에서는 화면 크기를 기준으로 키보드 높이를 정확하게 계산
         setKeyboardHeight(keyboardHeight);
       }
     };
@@ -147,9 +147,9 @@ const SignIn = () => {
     };
   }, []);
 
-  const handleChangeEmail = (value) => {
+  const handleChangeUsername = (value) => {
     setErrorMessage("");
-    setEmail(value);
+    setUsername(value);
   };
 
   const handleChangePw = (value) => {
@@ -157,9 +157,8 @@ const SignIn = () => {
     setPw(value);
   };
 
-  const validateEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+  const validateUsername = (username) => {
+    return username.length >= 2;
   };
 
   const validatePassword = (password) => {
@@ -169,7 +168,7 @@ const SignIn = () => {
   const handleInputChange = (value) => {
     switch (arrayIndex) {
       case 0:
-        handleChangeEmail(value);
+        handleChangeUsername(value);
         break;
       case 1:
         handleChangePw(value);
@@ -180,8 +179,8 @@ const SignIn = () => {
   const handleCheckInput = () => {
     switch (arrayIndex) {
       case 0:
-        if (!validateEmail(email)) {
-          setErrorMessage("올바른 이메일 형식이 아닙니다.");
+        if (!validateUsername(username)) {
+          setErrorMessage("아이디는 2글자 이상이어야 합니다.");
           return;
         }
         setArrayIndex(1);
@@ -192,7 +191,7 @@ const SignIn = () => {
           setErrorMessage("비밀번호는 8자 이상이어야 합니다.");
           return;
         }
-        handleSignIn(); // 로그인 처리
+        handleSignIn();
         break;
     }
   };
@@ -200,7 +199,7 @@ const SignIn = () => {
   const isButtonEnabled = () => {
     switch (arrayIndex) {
       case 0:
-        return validateEmail(email);
+        return validateUsername(username);
       case 1:
         return validatePassword(password);
       default:
@@ -208,35 +207,74 @@ const SignIn = () => {
     }
   };
 
-  const handleSignIn = () => {
-    Alert.alert(
-      "로그인 완료",
-      "로그인 성공 홈으로 이동합니다.",
-      [{ text: "확인", onPress: () => navigation.navigate("Home") }]
-    );
-  };
-
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleSignIn = async () => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', username);
+      formData.append('password', password);
+      formData.append('grant_type', 'password');
+      formData.append('scope', '');
+      formData.append('client_id', '');
+      formData.append('client_secret', '');
+  
+      const response = await axios.post(
+        'http://3.38.165.247/api/v1/auth/login', 
+        formData.toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      console.log("로그인 성공:", response.data);
+      
+      Alert.alert(
+        "로그인 완료",
+        "로그인에 성공했습니다.",
+        [{ text: "확인", onPress: () => navigation.navigate("Home") }]
+      );
+      
+    } catch (error) {
+      console.log("로그인 실패:", error.response?.data || error);
+      
+      let errorMsg = "로그인에 실패했습니다.";
+      if (error.response?.data?.error_description) {
+        errorMsg = error.response.data.error_description;
+      } else if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      }
+      
+      Alert.alert(
+        "로그인 실패",
+        errorMsg,
+        [{ text: "확인" }]
+      );
+    }
   };
 
   return (
     <Container>
       <Wrapper>
         <TitleText>{titleTextArray[arrayIndex]}</TitleText>
-        <SubText>아이디 비밀번호를 입력하여 로그인을 진행해 주세요</SubText>
+        <SubText>아이디와 비밀번호를 입력하여 로그인을 진행해 주세요</SubText>
         <InputContainer>
-        <InputBox
-          placeholder={placeHolderArray[arrayIndex]}
-          autoFocus={true}
-          returnKeyType="done"
-          value={valueArray[arrayIndex]}
-          onChangeText={handleInputChange}
-          secureTextEntry={arrayIndex === 1 && !showPassword} 
-          hasEyeIcon={arrayIndex === 1}
-          blurOnSubmit={false}
-          keyboardType={arrayIndex === 0 ? 'email-address' : 'default'}
-        />
+          <InputBox
+            placeholder={placeHolderArray[arrayIndex]}
+            autoFocus={true}
+            returnKeyType="done"
+            value={valueArray[arrayIndex]}
+            onChangeText={handleInputChange}
+            secureTextEntry={arrayIndex === 1 && !showPassword}
+            hasEyeIcon={arrayIndex === 1}
+            blurOnSubmit={false}
+            keyboardType="default"
+          />
           {arrayIndex === 1 && (
             <EyeIconButton onPress={togglePasswordVisibility}>
               <Icon 

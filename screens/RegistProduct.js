@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, View, ScrollView, Text, Platform, PermissionsAndroid } from 'react-native';
+import { TouchableOpacity, Platform, PermissionsAndroid, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
 import styled from "styled-components/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -12,13 +12,12 @@ const SafeContainer = styled.SafeAreaView`
 
 const Container = styled.View`
   flex: 1;
-  padding: 10px;
-  position: relative;
 `;
 
-const ScrollContainer = styled.ScrollView`
+const ContentContainer = styled.ScrollView`
   flex: 1;
   padding: 10px;
+  margin-bottom: ${props => props.keyboardOpen ? '0px' : '80px'};
 `;
 
 const ImageContainer = styled.View`
@@ -70,6 +69,7 @@ const DetailInputBox = styled.TextInput`
   border: 1px solid lightgray;
   border-radius: 5px;
   padding: 10px;
+  min-height: 100px;
 `;
 
 const RegistButtonContainer = styled.View`
@@ -99,6 +99,7 @@ const RegistText = styled.Text`
 
 const RegistProduct = () => {
   const [images, setImages] = useState([]);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   // 갤러리 권한 요청
   const checkGalleryPermission = async () => {
@@ -218,68 +219,87 @@ const RegistProduct = () => {
 
   return (
     <SafeContainer>
-      <Container>
-        <ScrollContainer>
-        <StyledText>사진 등록</StyledText>
-        <ButtonContainer>
-          <StyledButton onPress={checkCameraPermission}>
-            <Icon name="add-photo-alternate" size={30} color="gray"/>
-          </StyledButton>
-          <StyledButton onPress={checkGalleryPermission}>
-            <Icon name="add-a-photo" size={30} color="gray"/>
-            <ButtonText>({images.length}/5)</ButtonText>
-          </StyledButton>
-        </ButtonContainer>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        onKeyboardDidShow={() => setKeyboardOpen(true)}
+        onKeyboardDidHide={() => setKeyboardOpen(false)}
+      >
+        <Container>
+          <ContentContainer 
+            keyboardOpen={keyboardOpen}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+          >
+            <StyledText>사진 등록</StyledText>
+            <ButtonContainer>
+              <StyledButton onPress={checkCameraPermission}>
+                <Icon name="add-photo-alternate" size={30} color="gray"/>
+              </StyledButton>
+              <StyledButton onPress={checkGalleryPermission}>
+                <Icon name="add-a-photo" size={30} color="gray"/>
+                <ButtonText>({images.length}/5)</ButtonText>
+              </StyledButton>
+            </ButtonContainer>
 
-          <ImageContainer>
-            {images.map((image, index) => (
-              <TouchableOpacity 
-                key={index} 
-                onPress={() => removeImage(index)}
-                activeOpacity={0.7}
-              >
-                <SelectedImage 
-                  source={{ uri: image.uri }} 
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            ))}
-          </ImageContainer>
-          <StyledText>제목</StyledText>
-          <InputBox 
-            placeholder="글 제목을 입력하세요"
-          />
-          <StyledText>교환을 원하는 식재료</StyledText>
-          <InputBox 
-            placeholder="상세한 식재료명"
-          />
-          <StyledText>상세 설명</StyledText>
-          <DetailInputBox 
-            placeholder="거래 게시판에 올릴 식재료에 대한 설명을 상세하게 써주세요. 다양한 사람들이 이용하는 게시판인 만큼 매너와 에티켓을 지켜주시기 바라며 신선하고 무해한 상품만 등록해 주시면 감사하겠습니다."
-            multiline={true}
-          />
-          <StyledText>희망 장소</StyledText>  
-          <ButtonContainer>
-            <StyledButton>
-              <Icon name="gps-fixed" size={30} color="gray"/>
-              <ButtonText>내위치</ButtonText>
-            </StyledButton>
-            <StyledButton>
-              <Icon name="search" size={30} color="gray"/>
-              <ButtonText>주소검색</ButtonText>
-            </StyledButton>
-            <StyledButton>
-              <Icon2 name="map-marker-radius" size={30} color="gray"/>
-              <ButtonText>지도찾기</ButtonText>
-            </StyledButton>
-          </ButtonContainer>
-          </ScrollContainer>
+            <ImageContainer>
+              {images.map((image, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  onPress={() => removeImage(index)}
+                  activeOpacity={0.7}
+                >
+                  <SelectedImage 
+                    source={{ uri: image.uri }} 
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ImageContainer>
+
+            <StyledText>제목</StyledText>
+            <InputBox 
+              placeholder="글 제목을 입력하세요"
+            />
+            <StyledText>교환을 원하는 식재료</StyledText>
+            <InputBox 
+              placeholder="상세한 식재료명"
+            />
+            <StyledText>판매 금액</StyledText>
+            <InputBox 
+              placeholder="교환 대신 원하시는 판매금액을 입력해 주세요"
+              keyboardType="numeric"
+            />
+            <StyledText>상세 설명</StyledText>
+            <DetailInputBox 
+              placeholder="거래 게시판에 올릴 식재료에 대한 설명을 상세하게 써주세요. 다양한 사람들이 이용하는 게시판인 만큼 매너와 에티켓을 지켜주시기 바라며 신선하고 무해한 상품만 등록해 주시면 감사하겠습니다."
+              multiline={true}
+              textAlignVertical="top"
+            />
+            <StyledText>희망 장소</StyledText>  
+            <ButtonContainer>
+              <StyledButton>
+                <Icon name="gps-fixed" size={30} color="gray"/>
+                <ButtonText>내위치</ButtonText>
+              </StyledButton>
+              <StyledButton>
+                <Icon name="search" size={30} color="gray"/>
+                <ButtonText>주소검색</ButtonText>
+              </StyledButton>
+              <StyledButton>
+                <Icon2 name="map-marker-radius" size={30} color="gray"/>
+                <ButtonText>지도찾기</ButtonText>
+              </StyledButton>
+            </ButtonContainer>
+          </ContentContainer>
+          
           <RegistButtonContainer>
             <RegistButton>
               <RegistText>등록하기</RegistText>
             </RegistButton>
           </RegistButtonContainer>
-      </Container>
+        </Container>
+      </KeyboardAvoidingView>
     </SafeContainer>
   );
 };

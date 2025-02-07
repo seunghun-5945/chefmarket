@@ -94,8 +94,6 @@ const ShareFrame = styled.View`
   justify-content: space-between;
   gap: 10px;
   padding: 0px 20px 20px 20px;
-  border-bottom-width: 1px;
-  border-bottom-color: #eee;
 `;
 
 const IconArea = styled.View`
@@ -111,6 +109,24 @@ const ShareButton = styled.TouchableOpacity`
   border-radius: 10px;
   gap: 10px;
 `;
+
+const RequesterInfoFrame = styled.View`
+  padding: 10px;
+  flex-direction: row;
+  align-items: center;
+  border-bottom-width: 1px;
+  border-bottom-color: #eee;
+  gap: 10px;
+`;
+
+const RequesterProfileImage = styled.View`
+  width: 40px;
+  height: 40px;
+  border: 1px solid red;
+  border-radius: 50px;
+`;
+
+
 
 const DetailProduct = ({ route }) => {
   // route.params에서 productData를 추출
@@ -167,6 +183,11 @@ const DetailProduct = ({ route }) => {
               <Icon name="share" size={15} /><Text>공유하기</Text>
             </ShareButton>
           </ShareFrame>
+          <RequesterInfoFrame>
+            <RequesterProfileImage></RequesterProfileImage>
+            <Text>왕따새끼</Text>
+            <Text>왕따새끼</Text>
+          </RequesterInfoFrame>
         </ScrollContainer>
         <ButtonContainer>
           <Button>

@@ -4,30 +4,30 @@ import { TouchableOpacity, Linking } from "react-native";
 
 const NewsContainer = styled.View`
   width: 100%;
-  height: 150px;
+  height: 100px;
   flex-direction: row;
   border-bottom-width: 1px;
   border-bottom-color: lightgray;
 `;
 
 const ImageFrame = styled.Image`
-  width: 40%;
+  width: 30%;
   height: 100%;
 `;
 
 const ArticleFrame = styled.View`
-  width: 60%;
+  width: 70%;
   height: 100%;
 `;
 
 const ArticleTitle = styled.Text`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   margin: 10px;
 `;
 
 const ArticleDescription = styled.Text`
-  font-size: 14px;
+  font-size: 12px;
   margin: 0 10px;
   color: #666;
 `;
@@ -58,7 +58,7 @@ const News = ({ article }) => {
         />
         <ArticleFrame>
           <ArticleTitle numberOfLines={2}>{article.title}</ArticleTitle>
-          <ArticleDescription numberOfLines={3}>{article.description}</ArticleDescription>
+          <ArticleDescription numberOfLines={2}>{article.description}</ArticleDescription>
           <ArticleDate>{new Date(article.publishedAt).toLocaleDateString()}</ArticleDate>
         </ArticleFrame>
       </NewsContainer>

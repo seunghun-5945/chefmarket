@@ -4,6 +4,7 @@ import { Text, Keyboard, Platform, Alert, TouchableOpacity, View, Dimensions } f
 import Icon from 'react-native-vector-icons/Ionicons';
 import Address from "../components/Address";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 
 const Container = styled.SafeAreaView`
   flex: 1;
@@ -60,6 +61,10 @@ const CurrentLocationBtn = styled.TouchableOpacity`
   margin-top: 10px;
 `;
 
+const AddressButton = styled.TouchableOpacity`
+  width: 100%;
+`;
+
 const EyeIconButton = styled.TouchableOpacity`
   position: absolute;
   right: 12px;
@@ -97,6 +102,7 @@ const ErrorText = styled.Text`
 const SignUp = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [name, setName] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPw] = useState("");
   const [pwCheck, setPwCheck] = useState("");
@@ -110,22 +116,24 @@ const SignUp = () => {
   const navigation = useNavigation();
 
   const titleTextArray = [
-    "이름을 입력해 주세요",
+    "아이디를 입력해 주세요",
     "이메일을 입력해 주세요",
+    "닉네임을 입력해 주세요",
     "비밀번호를 입력해 주세요",
     "비밀번호를 확인합니다",
     "마지막으로 주소를 입력해 주세요"
   ];
   
   const placeHolderArray = [
-    "이름",
+    "아이디",
     "이메일",
+    "닉네임",
     "비밀번호",
     "비밀번호 확인",
     "탭하여 주소 찾기"
   ];
   
-  const valueArray = [name, email, password, pwCheck, address];
+  const valueArray = [name, email, nickname, password, pwCheck, address];
 
   useEffect(() => {
     const keyboardWillShow = (event) => {
@@ -134,7 +142,6 @@ const SignUp = () => {
       } else {
         const screenHeight = Dimensions.get('window').height;
         const keyboardHeight = event.endCoordinates.height;
-        // Android에서는 화면 크기를 기준으로 키보드 높이를 정확하게 계산
         setKeyboardHeight(keyboardHeight);
       }
     };
@@ -162,6 +169,11 @@ const SignUp = () => {
   const handleChangeName = (value) => {
     setErrorMessage("");
     setName(value);
+  };
+
+  const handleChangeNickname = (value) => {
+    setErrorMessage("");
+    setNickname(value);
   };
 
   const handleChangeEmail = (value) => {
@@ -202,12 +214,15 @@ const SignUp = () => {
         handleChangeEmail(value);
         break;
       case 2:
-        handleChangePw(value);
+        handleChangeNickname(value);
         break;
       case 3:
-        handleChangePwCheck(value);
+        handleChangePw(value);
         break;
       case 4:
+        handleChangePwCheck(value);
+        break;
+      case 5:
         handleChangeAddress(value);
         break;
     }
@@ -222,7 +237,7 @@ const SignUp = () => {
     switch (arrayIndex) {
       case 0:
         if (name.length < 2) {
-          setErrorMessage("이름은 2글자 이상이어야 합니다.");
+          setErrorMessage("아이디는 2글자 이상이어야 합니다.");
           return;
         }
         setArrayIndex(1);
@@ -237,25 +252,33 @@ const SignUp = () => {
         break;
       
       case 2:
-        if (!validatePassword(password)) {
-          setErrorMessage("비밀번호는 8자 이상이어야 합니다.");
+        if (nickname.length < 2) {
+          setErrorMessage("닉네임은 2글자 이상이어야 합니다.");
           return;
         }
         setArrayIndex(3);
         break;
       
       case 3:
-        if (password !== pwCheck) {
-          setErrorMessage("비밀번호가 일치하지 않습니다.");
+        if (!validatePassword(password)) {
+          setErrorMessage("비밀번호는 8자 이상이어야 합니다.");
           return;
         }
         setArrayIndex(4);
         break;
+      
+      case 4:
+        if (password !== pwCheck) {
+          setErrorMessage("비밀번호가 일치하지 않습니다.");
+          return;
+        }
+        setArrayIndex(5);
+        break;
 
-        case 4:
+      case 5:
         if (address === null) {
           setErrorMessage("주소를 입력해 주세요.");
-          return
+          return;
         }
         handleSignUp();
         break;
@@ -269,10 +292,12 @@ const SignUp = () => {
       case 1:
         return validateEmail(email);
       case 2:
-        return validatePassword(password);
+        return nickname.length >= 2;
       case 3:
-        return password === pwCheck;
+        return validatePassword(password);
       case 4:
+        return password === pwCheck;
+      case 5:
         return address !== null && address !== '';
       default:
         return false;
@@ -280,23 +305,45 @@ const SignUp = () => {
   };
 
   const handleInputPress = () => {
-    if (arrayIndex === 4) {
+    if (arrayIndex === 5) {
       setShowAddressModal(true);
     }
   };
 
-  const handleSignUp = () => {
-    Alert.alert(
-      "회원가입 완료",
-      "회원가입이 성공적으로 완료되었습니다.",
-      [{ text: "확인", onPress: () => navigation.navigate("Home") }]
-    );
+  const handleSignUp = async () => {
+    try {
+      const response = await axios.post('http://3.38.165.247/api/v1/auth/register', {
+        email: email,
+        username: name,
+        nickname: nickname,
+        password: password
+      });
+      
+      Alert.alert(
+        "회원가입 완료",
+        "회원가입이 성공적으로 완료되었습니다.",
+        [{ text: "확인", onPress: () => navigation.navigate("Home") }]
+      );
+    } catch (error) {
+      console.log("회원가입 실패:", error);
+      
+      let errorMsg = "회원가입에 실패했습니다.";
+      if (error.response) {
+        errorMsg = error.response.data.message || errorMsg;
+      }
+      
+      Alert.alert(
+        "회원가입 실패",
+        errorMsg,
+        [{ text: "확인" }]
+      );
+    }
   };
 
   const togglePasswordVisibility = () => {
-    if (arrayIndex === 2) {
+    if (arrayIndex === 3) {
       setShowPassword(!showPassword);
-    } else if (arrayIndex === 3) {
+    } else if (arrayIndex === 4) {
       setShowPasswordCheck(!showPasswordCheck);
     }
   };
@@ -307,15 +354,20 @@ const SignUp = () => {
         <TitleText>{titleTextArray[arrayIndex]}</TitleText>
         <SubText>한번만 입력하니 주의깊게 작성해 주세요!</SubText>
         <InputContainer>
-          {arrayIndex === 4 ? (
+          {arrayIndex === 5 ? (
             <View style={{width:"100%", flexDirection:"column", border:"1"}}>
-              <ReadOnlyInputBox
-                placeholder={placeHolderArray[arrayIndex]}
-                value={address}
-                editable={false}
-                onPressIn={handleInputPress}
-                hasEyeIcon={false}
-              />
+              <AddressButton 
+                onPress={handleInputPress}
+                activeOpacity={0.8}
+              >
+                <ReadOnlyInputBox
+                  placeholder={placeHolderArray[arrayIndex]}
+                  value={address}
+                  editable={false}
+                  hasEyeIcon={false}
+                  onPressIn={handleInputPress}
+                />
+              </AddressButton>
               <CurrentLocationBtn>
                 <Icon name="location-outline" size={25} color="red" />
                 <Text>현재 위치로 설정</Text>
@@ -328,15 +380,15 @@ const SignUp = () => {
               returnKeyType="done"
               value={valueArray[arrayIndex]}
               onChangeText={handleInputChange}
-              secureTextEntry={(arrayIndex === 2 && !showPassword) || (arrayIndex === 3 && !showPasswordCheck)}
-              hasEyeIcon={arrayIndex >= 2 && arrayIndex <= 3}
+              secureTextEntry={(arrayIndex === 3 && !showPassword) || (arrayIndex === 4 && !showPasswordCheck)}
+              hasEyeIcon={arrayIndex >= 3 && arrayIndex <= 4}
               blurOnSubmit={false}
             />
           )}
-          {arrayIndex >= 2 && arrayIndex <= 3 && (
+          {arrayIndex >= 3 && arrayIndex <= 4 && (
             <EyeIconButton onPress={togglePasswordVisibility}>
               <Icon 
-                name={arrayIndex === 2 
+                name={arrayIndex === 3 
                   ? (showPassword ? 'eye-outline' : 'eye-off-outline')
                   : (showPasswordCheck ? 'eye-outline' : 'eye-off-outline')
                 } 
@@ -359,7 +411,7 @@ const SignUp = () => {
             fontWeight: "bold",
             color: isButtonEnabled() ? 'black' : '#666'
           }}>
-            {arrayIndex === 4 ? "완료" : "다음"}
+            {arrayIndex === 5 ? "완료" : "다음"}
           </Text>
         </NextButton>
       </ButtonWrapper>

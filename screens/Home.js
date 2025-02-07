@@ -42,9 +42,10 @@ const Home = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: "row", marginRight: 15 }}>
+        <View style={{ flexDirection: "row"}}>
           <TouchableOpacity 
             onPress={() => navigation.navigate("Chat")} 
+            style={{ marginHorizontal: 10 }}
           >
             <Icon name="chatbubble-ellipses-outline" size={24} color="black" />
           </TouchableOpacity>

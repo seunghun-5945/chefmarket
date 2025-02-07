@@ -1,6 +1,11 @@
 import React from 'react';
 import { Modal, SafeAreaView } from 'react-native';
-import Postcode from '@actbase/react-daum-postcode';
+import OriginalPostcode from '@actbase/react-daum-postcode';
+
+// 래퍼 컴포넌트 생성
+const PostcodeWrapper = React.forwardRef((props, ref) => {
+  return <OriginalPostcode {...props} ref={ref} />;
+});
 
 const Address = ({ visible, onClose, onSelect }) => {
     const getAddressData = (data) => {
@@ -29,7 +34,7 @@ const Address = ({ visible, onClose, onSelect }) => {
             onRequestClose={onClose}
         >
             <SafeAreaView style={{ flex: 1 }}>
-                <Postcode
+                <PostcodeWrapper
                     style={{ width: '100%', height: '100%' }}
                     jsOptions={{ 
                         animation: true,

@@ -17,7 +17,7 @@ const ChatRoom = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={{ flexDirection: "row", marginRight: 15 }}>
+        <View style={{ flexDirection: "row" }}>
           <TouchableOpacity 
             onPress={() => navigation.navigate("MapModal")} 
             style={{ marginHorizontal: 10 }}

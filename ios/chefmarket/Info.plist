@@ -78,5 +78,19 @@
   <key>NSMicrophoneUsageDescription</key>
   <string>$(PRODUCT_NAME) would like to use your microphone (for videos)</string>
 
+	<key>NSAppTransportSecurity</key>
+	<dict>
+			<key>NSExceptionDomains</key>
+			<dict>
+					<key>3.38.165.247</key>
+					<dict>
+							<key>NSExceptionAllowsInsecureHTTPLoads</key>
+							<true/>
+							<key>NSIncludesSubdomains</key>
+							<true/>
+					</dict>
+			</dict>
+	</dict>
+
 </dict>
 </plist>
