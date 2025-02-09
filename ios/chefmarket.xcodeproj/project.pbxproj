@@ -11,9 +11,9 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		2DE0AD22A826DF24EF31FBCF /* libPods-chefmarket-chefmarketTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 97420460B52D526983626A10 /* libPods-chefmarket-chefmarketTests.a */; };
+		65ACE19EBC4FE2770FCC1067 /* libPods-chefmarket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2266DABEAF9A3C7740BCADA9 /* libPods-chefmarket.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		8260403320B0539269DC1546 /* libPods-chefmarket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5ECD4F7A13F78BFABA672AB6 /* libPods-chefmarket.a */; };
-		ACF86433460B48A7DCAFDD3C /* libPods-chefmarket-chefmarketTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B19E487567238EDCED24599C /* libPods-chefmarket-chefmarketTests.a */; };
 		FE5164D762996E1AF9EDC185 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -38,14 +38,14 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = chefmarket/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = chefmarket/main.m; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = chefmarket/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		23D0372680493DB3A957B0FA /* Pods-chefmarket-chefmarketTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket-chefmarketTests.release.xcconfig"; path = "Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests.release.xcconfig"; sourceTree = "<group>"; };
-		54877FA81DF81C5F7CF89138 /* Pods-chefmarket.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket.release.xcconfig"; path = "Target Support Files/Pods-chefmarket/Pods-chefmarket.release.xcconfig"; sourceTree = "<group>"; };
-		5ECD4F7A13F78BFABA672AB6 /* libPods-chefmarket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-chefmarket.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		7CAB9E75F1275C26DE7FDC77 /* Pods-chefmarket.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket.debug.xcconfig"; path = "Target Support Files/Pods-chefmarket/Pods-chefmarket.debug.xcconfig"; sourceTree = "<group>"; };
+		2266DABEAF9A3C7740BCADA9 /* libPods-chefmarket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-chefmarket.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		32B0C17CF1CBF0E269EAA5E6 /* Pods-chefmarket.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket.debug.xcconfig"; path = "Target Support Files/Pods-chefmarket/Pods-chefmarket.debug.xcconfig"; sourceTree = "<group>"; };
+		52F2D661747F60C0FE2D2B7A /* Pods-chefmarket-chefmarketTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket-chefmarketTests.debug.xcconfig"; path = "Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests.debug.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = chefmarket/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		B19E487567238EDCED24599C /* libPods-chefmarket-chefmarketTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-chefmarket-chefmarketTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		97420460B52D526983626A10 /* libPods-chefmarket-chefmarketTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-chefmarket-chefmarketTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A53C5BB48846C4D339BFA9DF /* Pods-chefmarket.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket.release.xcconfig"; path = "Target Support Files/Pods-chefmarket/Pods-chefmarket.release.xcconfig"; sourceTree = "<group>"; };
+		C824338D8BE95AA8F794E77D /* Pods-chefmarket-chefmarketTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket-chefmarketTests.release.xcconfig"; path = "Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F3A7A96C9834EDBFA163CD1F /* Pods-chefmarket-chefmarketTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket-chefmarketTests.debug.xcconfig"; path = "Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,7 +53,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ACF86433460B48A7DCAFDD3C /* libPods-chefmarket-chefmarketTests.a in Frameworks */,
+				2DE0AD22A826DF24EF31FBCF /* libPods-chefmarket-chefmarketTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,7 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8260403320B0539269DC1546 /* libPods-chefmarket.a in Frameworks */,
+				65ACE19EBC4FE2770FCC1067 /* libPods-chefmarket.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,8 +103,8 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5ECD4F7A13F78BFABA672AB6 /* libPods-chefmarket.a */,
-				B19E487567238EDCED24599C /* libPods-chefmarket-chefmarketTests.a */,
+				2266DABEAF9A3C7740BCADA9 /* libPods-chefmarket.a */,
+				97420460B52D526983626A10 /* libPods-chefmarket-chefmarketTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -143,10 +143,10 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				7CAB9E75F1275C26DE7FDC77 /* Pods-chefmarket.debug.xcconfig */,
-				54877FA81DF81C5F7CF89138 /* Pods-chefmarket.release.xcconfig */,
-				F3A7A96C9834EDBFA163CD1F /* Pods-chefmarket-chefmarketTests.debug.xcconfig */,
-				23D0372680493DB3A957B0FA /* Pods-chefmarket-chefmarketTests.release.xcconfig */,
+				32B0C17CF1CBF0E269EAA5E6 /* Pods-chefmarket.debug.xcconfig */,
+				A53C5BB48846C4D339BFA9DF /* Pods-chefmarket.release.xcconfig */,
+				52F2D661747F60C0FE2D2B7A /* Pods-chefmarket-chefmarketTests.debug.xcconfig */,
+				C824338D8BE95AA8F794E77D /* Pods-chefmarket-chefmarketTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -158,12 +158,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "chefmarketTests" */;
 			buildPhases = (
-				5795AFD7382CB295C1EDE9D2 /* [CP] Check Pods Manifest.lock */,
+				F0A5C244F73672528B15725D /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
 				00E356EB1AD99517003FC87E /* Frameworks */,
 				00E356EC1AD99517003FC87E /* Resources */,
-				8C28F5A48284AFF11A2E4B54 /* [CP] Embed Pods Frameworks */,
-				24E80CF9629306E63F82E170 /* [CP] Copy Pods Resources */,
+				74DAC1B1BFFC6419EDD27FAD /* [CP] Embed Pods Frameworks */,
+				B881170A1FE4A2645A1F9F1C /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -179,13 +179,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "chefmarket" */;
 			buildPhases = (
-				C2F67AE908FD85D8B653BAD0 /* [CP] Check Pods Manifest.lock */,
+				386A5120643701320962165C /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				34EDAE4B3ECC11C9C657487C /* [CP] Embed Pods Frameworks */,
-				3EB50478AD2E9D9587ACAED1 /* [CP] Copy Pods Resources */,
+				8B05C9E1CF6678EFC653CACF /* [CP] Embed Pods Frameworks */,
+				5D3F81ED6F8BF2A00AFCA6EE /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -269,41 +269,29 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		24E80CF9629306E63F82E170 /* [CP] Copy Pods Resources */ = {
+		386A5120643701320962165C /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			name = "[CP] Copy Pods Resources";
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-chefmarket-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		34EDAE4B3ECC11C9C657487C /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		3EB50478AD2E9D9587ACAED1 /* [CP] Copy Pods Resources */ = {
+		5D3F81ED6F8BF2A00AFCA6EE /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -320,29 +308,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		5795AFD7382CB295C1EDE9D2 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-chefmarket-chefmarketTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		8C28F5A48284AFF11A2E4B54 /* [CP] Embed Pods Frameworks */ = {
+		74DAC1B1BFFC6419EDD27FAD /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -359,7 +325,41 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C2F67AE908FD85D8B653BAD0 /* [CP] Check Pods Manifest.lock */ = {
+		8B05C9E1CF6678EFC653CACF /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket/Pods-chefmarket-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B881170A1FE4A2645A1F9F1C /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F0A5C244F73672528B15725D /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -374,7 +374,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-chefmarket-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-chefmarket-chefmarketTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -414,7 +414,7 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F3A7A96C9834EDBFA163CD1F /* Pods-chefmarket-chefmarketTests.debug.xcconfig */;
+			baseConfigurationReference = 52F2D661747F60C0FE2D2B7A /* Pods-chefmarket-chefmarketTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -441,7 +441,7 @@
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 23D0372680493DB3A957B0FA /* Pods-chefmarket-chefmarketTests.release.xcconfig */;
+			baseConfigurationReference = C824338D8BE95AA8F794E77D /* Pods-chefmarket-chefmarketTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
@@ -465,7 +465,7 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7CAB9E75F1275C26DE7FDC77 /* Pods-chefmarket.debug.xcconfig */;
+			baseConfigurationReference = 32B0C17CF1CBF0E269EAA5E6 /* Pods-chefmarket.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -494,7 +494,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 54877FA81DF81C5F7CF89138 /* Pods-chefmarket.release.xcconfig */;
+			baseConfigurationReference = A53C5BB48846C4D339BFA9DF /* Pods-chefmarket.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
