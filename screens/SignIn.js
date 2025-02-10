@@ -4,6 +4,7 @@ import { Text, Keyboard, Platform, Alert, TouchableOpacity, View, Dimensions } f
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Container = styled.SafeAreaView`
   flex: 1;
@@ -113,6 +114,16 @@ const SignIn = () => {
     "아이디",
     "비밀번호",
   ];
+
+  const saveToken = async (token) => {
+    try {
+      await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('lastLoginTime', new Date().toISOString());
+      console.log('Token saved successfully');
+    } catch (error) {
+      console.error('Error saving token:', error);
+    }
+  };
   
   const valueArray = [username, password];
 
@@ -231,6 +242,9 @@ const SignIn = () => {
           }
         }
       );
+
+      const accessToken = response.data.access_token;
+      await saveToken(accessToken);
       
       console.log("로그인 성공:", response.data);
       

@@ -152,6 +152,14 @@ const App = () => {
             headerTitle: ""
           }}
         />
+        <Stack.Screen
+          name="TakePhoto"
+          component={TakePhoto}
+          options={{
+            headerShown: true,
+            headerTitle: ""
+          }}
+        />
      </Stack.Navigator>
    </NavigationContainer>
  );

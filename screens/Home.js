@@ -56,7 +56,7 @@ const Home = () => {
             <Icon name="search" size={24} color="black" />
           </TouchableOpacity>
           <TouchableOpacity 
-            onPress={() => navigation.navigate("ProfileModal")} 
+            onPress={() => navigation.navigate("TakePhoto")} 
             style={{ marginHorizontal: 10 }}
           >
             <Icon name="notifications-outline" size={24} color="black" />
