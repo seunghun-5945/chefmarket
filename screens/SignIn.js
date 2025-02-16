@@ -233,7 +233,7 @@ const SignIn = () => {
       formData.append('client_secret', '');
   
       const response = await axios.post(
-        'http://3.38.165.247/api/v1/auth/login', 
+        'http://3.34.59.23/api/v1/auth/login', 
         formData.toString(),
         {
           headers: {

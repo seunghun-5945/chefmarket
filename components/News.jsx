@@ -57,7 +57,7 @@ const News = ({ article }) => {
           resizeMode="cover"
         />
         <ArticleFrame>
-          <ArticleTitle numberOfLines={2}>{article.title}</ArticleTitle>
+          <ArticleTitle numberOfLines={1}>{article.title}</ArticleTitle>
           <ArticleDescription numberOfLines={2}>{article.description}</ArticleDescription>
           <ArticleDate>{new Date(article.publishedAt).toLocaleDateString()}</ArticleDate>
         </ArticleFrame>

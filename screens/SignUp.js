@@ -324,11 +324,15 @@ const SignUp = () => {
 
   const handleSignUp = async () => {
     try {
-      const response = await axios.post('http://3.38.165.247/api/v1/auth/register', {
+      const response = await axios.post('http://3.34.59.23/api/v1/auth/register', {
         email: email,
         username: name,
         nickname: nickname,
-        password: password
+        password: password,
+        address_name: addressInfo.roadAddress,
+        zone_no: addressInfo.zipCode,
+        location_lat: addressInfo.latitude,
+        location_lon: addressInfo.longitude
       });
       
       Alert.alert(
