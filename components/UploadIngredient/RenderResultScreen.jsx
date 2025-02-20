@@ -1,9 +1,10 @@
 // RenderResultScreen.jsx
-import React from 'react';
+import React, {useEffect} from 'react';
 import styled from 'styled-components/native';
 import {Text, Platform, Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
 
 // 스크롤 관련 컴포넌트
 const ResultScrollContainer = styled.ScrollView`
@@ -167,6 +168,26 @@ const RenderResultScreen = ({
   formatDateTime,
   onComplete,
 }) => {
+  const navigation = useNavigation();
+
+  // OCR 분석 로직에서
+  useEffect(() => {
+    const performOCR = async () => {
+      try {
+        setIsLoading(true);
+        // OCR 분석 로직
+        const result = await analyzeImage();
+        setResponseData(result);
+      } catch (error) {
+        // 에러 처리
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    performOCR();
+  }, []);
+
   const handleConfirm = async () => {
     const selectedTempIds = Object.entries(selectedItems)
       .filter(([_, isSelected]) => isSelected)
@@ -224,6 +245,7 @@ const RenderResultScreen = ({
       if (response.ok) {
         Alert.alert('성공', '선택한 품목이 등록되었습니다.');
         onComplete();
+        navigation.navigate('MyIngredient');
       } else {
         const errorData = await response.json();
         Alert.alert('실패', `품목 등록 실패: ${JSON.stringify(errorData)}`);
@@ -236,7 +258,7 @@ const RenderResultScreen = ({
 
   return (
     <>
-      <ResultScrollContainer>
+      <ResultScrollContainer showsVerticalScrollIndicator={false}>
         <ResultContentContainer>
           <ResultContainer>
             <ResultTitle>인식된 품목</ResultTitle>

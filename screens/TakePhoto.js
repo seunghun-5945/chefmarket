@@ -21,6 +21,7 @@ const TakePhoto = () => {
   const [selectedItems, setSelectedItems] = useState({});
   const [itemDetails, setItemDetails] = useState({});
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
 
   const categories = ['육류', '채소', '과일', '주류', '음료', '양념', '기타'];
 
@@ -64,9 +65,11 @@ const TakePhoto = () => {
     }
 
     try {
+      setIsLoading(true); // 로티 로딩
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
         Alert.alert('에러', '로그인이 필요합니다');
+        setIsLoading(false);
         return;
       }
 
@@ -95,6 +98,7 @@ const TakePhoto = () => {
       } catch (parseError) {
         console.error('Failed to parse response:', responseText);
         Alert.alert('에러', '서버 응답을 처리할 수 없습니다');
+        setIsLoading(false);
         return;
       }
 
@@ -108,6 +112,8 @@ const TakePhoto = () => {
     } catch (e) {
       Alert.alert('에러', `서버 통신 오류: ${e.message}`);
       console.error('Upload error:', e);
+    } finally {
+      setIsLoading(false); // 로딩 종료
     }
   };
 
@@ -134,6 +140,7 @@ const TakePhoto = () => {
           imageUri={imageUri}
           uploadImage={uploadImage}
           resetImage={resetImage}
+          isProcessing={isLoading} // 로딩 상태 전달
         />
       )}
       {responseData?.items && (
@@ -148,6 +155,7 @@ const TakePhoto = () => {
           categories={categories}
           formatDateTime={formatDateTime}
           onComplete={handleComplete}
+          isLoading={isLoading} // 로딩 상태 전달
         />
       )}
     </Container>
