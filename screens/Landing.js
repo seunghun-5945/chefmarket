@@ -4,6 +4,7 @@ import Video from "react-native-video";
 import { useNavigation } from "@react-navigation/native"; // React Navigation 훅
 import SignInButton from "../components/SignInButton";
 import { Text } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Container = styled.View`
   flex: 1;
@@ -51,9 +52,24 @@ const StyledButton = styled(SignInButton)`
 
 const Landing = () => {
   const navigation = useNavigation(); // Navigation 훅 사용
-
-
   
+  useEffect(() => {
+    checkJWTToken();
+  }, []);
+
+  const checkJWTToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (token) {
+        // JWT 토큰이 존재하면 Home 화면으로 즉시 이동
+        navigation.replace('Home');
+        return; // 토큰이 있으면 아래 UI를 렌더링하지 않도록 early return
+      }
+    } catch (error) {
+      console.error('토큰 확인 중 에러 발생:', error);
+    }
+  };
+
   return (
     <Container>
       <Wrapper>

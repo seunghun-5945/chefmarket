@@ -32,7 +32,7 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-    	<key>3.34.59.23</key>
+			<key>3.34.59.23</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
@@ -79,6 +79,7 @@
 		<string>Octicons.ttf</string>
 		<string>Zocial.ttf</string>
 		<string>Fontisto.ttf</string>
+		<string>Niconne-Regular.ttf</string>
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>$(PRODUCT_NAME) would like access to your photo gallery</string>
@@ -90,9 +91,9 @@
 	<string>$(PRODUCT_NAME) would like to use your microphone (for videos)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-			<string>kakao</string>
-			<string>kakaokompassauth</string>
-			<string>kakaolink</string>
+		<string>kakao</string>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
 	</array>
 </dict>
 </plist>

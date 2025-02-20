@@ -16,25 +16,40 @@ import TakePhoto from "./screens/TakePhoto";
 import ChatRoom from "./screens/ChatRoom";
 import Chat from "./screens/Chat";
 import RegistProduct from "./screens/RegistProduct";
+import GroupPurchases from "./screens/GroupPurchases";
 import DetailProduct from "./screens/DetailProduct";
+import UploadIngredient from "./screens/UploadIngredient";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// 공통 헤더 스타일
+const commonHeaderOptions = {
+  headerTitle: "ChefMarket",
+  headerTitleAlign: 'left',
+  headerTitleStyle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: 'Niconne', // 여기에 원하시는 폰트 이름을 넣으세요
+    headerLeft: () => null, // 뒤로가기 버튼 비활성화
+  },
+};
 
 // 탭 네비게이터
 const HomeStack = () => {
  return (
    <Tab.Navigator
      screenOptions={{
-       tabBarActiveTintColor: '#eHomeModal91e63',
+       tabBarActiveTintColor: '#e91e63',
        tabBarInactiveTintColor: 'gray',
+       ...commonHeaderOptions,
      }}
    >
     <Tab.Screen 
       name="홈" 
       component={Home}
       options={{
-        headerTitle: "홈",
+        ...commonHeaderOptions,
         tabBarIcon: ({ color, size }) => (
           <Icon name="home" size={size} color={color} />
         ),
@@ -44,7 +59,7 @@ const HomeStack = () => {
        name="식료품거래" 
        component={Trade}
        options={{
-         headerTitle: "식료품거래",
+         ...commonHeaderOptions,
          tabBarIcon: ({ color, size }) => (
            <Icon name="cart" size={size} color={color} />
          ),
@@ -54,7 +69,7 @@ const HomeStack = () => {
        name="레시피" 
        component={Recipe}
        options={{
-         headerTitle: "레시피",
+         ...commonHeaderOptions,
          tabBarIcon: ({ color, size }) => (
            <Icon name="flask" size={size} color={color} />
          ),
@@ -64,7 +79,7 @@ const HomeStack = () => {
        name="채팅" 
        component={ChatRoom}
        options={{
-         headerTitle: "채팅목록",
+         ...commonHeaderOptions,
          tabBarIcon: ({ color, size }) => (
            <Icon name="chatbubble-ellipses-outline" size={size} color={color} />
          ),
@@ -74,7 +89,7 @@ const HomeStack = () => {
        name="마이페이지" 
        component={Profile}
        options={{
-         headerTitle: "마이페이지",
+         ...commonHeaderOptions,
          tabBarIcon: ({ color, size }) => (
            <Icon name="person" size={size} color={color} />
          ),
@@ -85,32 +100,31 @@ const HomeStack = () => {
 };
 
 const App = () => {
-//  useEffect(() => {
-//    SplashScreen.hide();
-//  }, []);
-
  return (
    <NavigationContainer>
-     <Stack.Navigator initialRouteName="Landing">
+     <Stack.Navigator 
+       initialRouteName="Landing"
+       screenOptions={commonHeaderOptions}
+     >
        <Stack.Screen 
          name="Landing" 
          component={Landing} 
          options={{ 
            headerShown: false,
-           headerTitle: '',
          }}
        />
        <Stack.Screen 
          name="SignIn" 
          component={SignIn} 
-         options={{ headerShown: false }}
+         options={{ 
+           headerShown: false,
+         }}
        />
        <Stack.Screen 
          name="SignUp" 
          component={SignUp} 
          options={{ 
            headerShown: true,
-           headerTitle: "회원가입",
          }}
        />
        <Stack.Screen 
@@ -123,43 +137,49 @@ const App = () => {
        <Stack.Screen 
          name="ChatRoom" 
          component={ChatRoom}
-         options={{ 
-           headerShown: true,
-           headerTitle: "채팅방",
+       />
+       <Stack.Screen 
+         name="Chat" 
+         component={Chat}
+         options={{
+          headerLeft: () => null, 
          }}
        />
-        <Stack.Screen 
-          name="Chat" 
-          component={Chat}
-          options={{ 
-            headerShown: true,
-            headerTitle: "채팅",
-          }}
-        />
+       <Stack.Screen
+         name="RegistProduct"
+         component={RegistProduct}
+         options={{
+          headerLeft: () => null, 
+         }}
+       />
         <Stack.Screen
-          name="RegistProduct"
-          component={RegistProduct}
-          options={{
-            headerShown: true,
-            headerTitle: "상품등록",
-          }}
-        />
+         name="GroupPurchases"
+         component={GroupPurchases}
+         options={{
+          headerLeft: () => null, 
+         }}
+       />
+       <Stack.Screen
+         name="DetailProduct"
+         component={DetailProduct}
+         options={{
+          headerLeft: () => null, 
+         }}
+       />
+       <Stack.Screen
+         name="TakePhoto"
+         component={TakePhoto}
+         options={{
+          headerLeft: () => null, 
+         }}
+       />
         <Stack.Screen
-          name="DetailProduct"
-          component={DetailProduct}
-          options={{
-            headerShown: true,
-            headerTitle: ""
-          }}
-        />
-        <Stack.Screen
-          name="TakePhoto"
-          component={TakePhoto}
-          options={{
-            headerShown: true,
-            headerTitle: ""
-          }}
-        />
+         name="UploadIngredient"
+         component={UploadIngredient}
+         options={{
+          headerLeft: () => null, 
+         }}
+       />
      </Stack.Navigator>
    </NavigationContainer>
  );

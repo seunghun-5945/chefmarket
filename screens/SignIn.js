@@ -115,15 +115,15 @@ const SignIn = () => {
     "비밀번호",
   ];
 
-  const saveToken = async (token) => {
-    try {
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('lastLoginTime', new Date().toISOString());
-      console.log('Token saved successfully');
-    } catch (error) {
-      console.error('Error saving token:', error);
-    }
-  };
+const saveToken = async (token) => {
+  try {
+    await AsyncStorage.setItem('accessToken', token); 
+    await AsyncStorage.setItem('lastLoginTime', new Date().toISOString());
+    console.log('Token saved successfully');
+  } catch (error) {
+    console.error('Error saving token:', error);
+  }
+};
   
   const valueArray = [username, password];
 

@@ -4,6 +4,7 @@ import { View, TouchableOpacity, Alert, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Icon2 from "react-native-vector-icons/AntDesign";
+import Icon3 from "react-native-vector-icons/Fontisto";
 import { Text } from "react-native-gesture-handler";
 import { TradeList } from "../jsons/TradeList.json";
 
@@ -121,13 +122,18 @@ const Trade = () => {
       headerRight: () => (
         <View style={{ flexDirection: "row" }}>
           <TouchableOpacity 
+            onPress={() => navigation.navigate("GroupPurchases")}
+            style={{ marginRight: 15 }}
+          >
+            <Icon3 name="shopping-basket" size={24} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity 
             // 빈 상품 데이터와 함께 이동하거나, 새로운 상품 등록 화면으로 이동
             onPress={() => navigation.navigate("RegistProduct")}
             style={{ marginRight: 15 }}
           >
             <Icon2 name="pluscircleo" size={24} color="black" />
           </TouchableOpacity>
-          {/* ... 나머지 코드 ... */}
         </View>
       ),
     });
