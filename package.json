@@ -28,6 +28,7 @@
     "react-native-video": "^6.9.1",
     "react-native-web-swiper": "^2.2.4",
     "react-native-webview": "^13.13.1",
+    "socket.io-client": "^4.8.1",
     "styled-components": "^6.1.14"
   },
   "devDependencies": {

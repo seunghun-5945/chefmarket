@@ -31,9 +31,15 @@ const commonHeaderOptions = {
   headerTitleStyle: {
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: 'Niconne', // 여기에 원하시는 폰트 이름을 넣으세요
-    headerLeft: () => null, // 뒤로가기 버튼 비활성화
+    fontFamily: 'Niconne',
   },
+  headerStyle: {
+    backgroundColor: '#D9534F', // 원하는 배경색 코드
+    elevation: 0, // Android 그림자 제거
+    shadowOpacity: 0, // iOS 그림자 제거
+  },
+  headerTintColor: 'white', // 헤더의 텍스트와 아이콘 색상
+  headerLeft: () => null,
 };
 
 // 탭 네비게이터
@@ -41,8 +47,15 @@ const HomeStack = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#e91e63',
+        tabBarActiveTintColor: '#D9534F',
         tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          backgroundColor: 'white',
+        },
+        tabBarLabelStyle: {
+          marginTop: 8, // 아이콘과 텍스트 사이 간격 조절
+          fontSize: 12, // 텍스트 크기도 선택적으로 조절 가능
+        },
         ...commonHeaderOptions,
       }}>
       <Tab.Screen

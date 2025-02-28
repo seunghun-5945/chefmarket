@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
-import { TouchableOpacity, Platform, PermissionsAndroid, KeyboardAvoidingView } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  TouchableOpacity,
+  Platform,
+  PermissionsAndroid,
+  KeyboardAvoidingView,
+} from 'react-native';
 import * as ImagePicker from 'react-native-image-picker';
-import styled from "styled-components/native";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import Icon2 from "react-native-vector-icons/MaterialCommunityIcons";
+import styled from 'styled-components/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon3 from 'react-native-vector-icons/FontAwesome';
 import Postcode from '@actbase/react-daum-postcode';
 import Address from '../components/Address';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
+import IngredientBrowseModal from '../components/IngredientBrowseModal';
+import {Text} from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
@@ -21,7 +30,7 @@ const Container = styled.View`
 const ContentContainer = styled.ScrollView`
   flex: 1;
   padding: 10px;
-  margin-bottom: ${props => props.keyboardOpen ? '0px' : '80px'};
+  margin-bottom: ${props => (props.keyboardOpen ? '0px' : '80px')};
 `;
 
 const ImageContainer = styled.View`
@@ -57,7 +66,7 @@ const ButtonContainer = styled.View`
   padding: 10px 10px 10px 0px;
 `;
 
-const StyledText = styled.Text` 
+const StyledText = styled.Text`
   font-weight: bold;
   font-size: 20px;
   margin: 15px 0px 10px 0px;
@@ -102,25 +111,72 @@ const RegistText = styled.Text`
 `;
 
 const RegistProduct = () => {
+  const [showBrowseModal, setShowBrowseModal] = useState(false); // 모달 표시 상태 추가
   const [images, setImages] = useState([]); // 1.사진
-  const [ingredientId, setIngredientId] = useState(0);  // 2.유저 고유 id 값 - jwt로 받아 올거임
+  const [ingredientId, setIngredientId] = useState(0); // 2.유저 고유 id 값 - jwt로 받아 올거임
   const [ingredientName, setIngredientName] = useState(''); // 3.식재료 이름인데 그냥 제목으로 할까보다
-  const [seelerId, setSellerId] = useState(); // 4.판매자 id - jwt로 받아올거임
+  const [sellerId, setSellerId] = useState(); // 4.판매자 id - jwt로 받아올거임
   const [value, setValue] = useState(0); // 5. 가격
   const [title, setTitle] = useState(''); // 제목으로 만든건데 이거 대신에 3. ingredientName 들어갈거임
-  const [addressInfo, setAddressInfo] = useState({  // 번외. 위치정보 (lat, lon 빼고는 내가 쓸거임)
+  const [addressInfo, setAddressInfo] = useState({
+    // 번외. 위치정보 (lat, lon 빼고는 내가 쓸거임)
     roadAddress: '',
     zipCode: '',
     longitude: '',
-    latitude: ''
+    latitude: '',
   });
-  const [longitude, setLongitude] = useState(0);  // 6.위도 정보
-  const [latitude, setLatitude] = useState(0) // 7.경도 정보
+  const [expiryDate, setExpiryDate] = useState('');
+  const [longitude, setLongitude] = useState(0); // 6.위도 정보
+  const [latitude, setLatitude] = useState(0); // 7.경도 정보
   const [contents, setContents] = useState(''); // 9. 상세정보
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [availableAmount, setAvailableAmount] = useState(0); // 사용자가 보유한 총 수량
+  const [amount, setAmount] = useState(''); // 판매하고자 하는 수량
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) {
+          alert('로그인이 필요합니다.');
+          return;
+        }
+
+        const response = await axios.get('http://3.34.59.23/api/v1/users/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log(response.data);
+        setSellerId(response.data.id);
+        // ingredient의 보유 수량 설정
+        if (response.data.ingredients && response.data.ingredients.length > 0) {
+          const ingredient = response.data.ingredients.find(
+            ing => ing.id === ingredientId,
+          );
+          if (ingredient) {
+            setAvailableAmount(ingredient.amount || 0);
+          }
+        }
+      } catch (error) {
+        console.error('사용자 데이터 조회 실패:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleIngredientSelect = ingredient => {
+    setIngredientId(ingredient.id);
+    setIngredientName(ingredient.name);
+    setTitle(ingredient.name);
+    setExpiryDate(ingredient.expiry_date); // 유통기한 정보 저장
+    setAvailableAmount(ingredient.amount || 0); // 선택한 식재료의 보유 수량 설정
+    setAmount(''); // 판매 수량 초기화
+  };
 
   // 갤러리 권한 요청
   const checkGalleryPermission = async () => {
@@ -129,12 +185,12 @@ const RegistProduct = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
           {
-            title: "ChefMarket 권한 요청",
-            message: "사진 선택을 위해 갤러리 접근 권한이 필요합니다.",
-            buttonNeutral: "나중에 묻기",
-            buttonNegative: "거부",
-            buttonPositive: "허용"
-          }
+            title: 'ChefMarket 권한 요청',
+            message: '사진 선택을 위해 갤러리 접근 권한이 필요합니다.',
+            buttonNeutral: '나중에 묻기',
+            buttonNegative: '거부',
+            buttonPositive: '허용',
+          },
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           openGallery();
@@ -157,12 +213,12 @@ const RegistProduct = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.CAMERA,
           {
-            title: "ChefMarket 카메라 권한 요청",
-            message: "사진 촬영을 위해 카메라 접근 권한이 필요합니다.",
-            buttonNeutral: "나중에 묻기",
-            buttonNegative: "거부",
-            buttonPositive: "허용"
-          }
+            title: 'ChefMarket 카메라 권한 요청',
+            message: '사진 촬영을 위해 카메라 접근 권한이 필요합니다.',
+            buttonNeutral: '나중에 묻기',
+            buttonNegative: '거부',
+            buttonPositive: '허용',
+          },
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           openCamera();
@@ -188,9 +244,9 @@ const RegistProduct = () => {
       maxHeight: 1024,
     };
 
-    ImagePicker.launchImageLibrary(options, (response) => {
+    ImagePicker.launchImageLibrary(options, response => {
       if (response.didCancel) return;
-      
+
       if (response.errorMessage) {
         alert('이미지 선택 중 오류가 발생했습니다: ' + response.errorMessage);
         return;
@@ -215,9 +271,9 @@ const RegistProduct = () => {
       maxHeight: 1024,
     };
 
-    ImagePicker.launchCamera(options, (response) => {
+    ImagePicker.launchCamera(options, response => {
       if (response.didCancel) return;
-      
+
       if (response.errorMessage) {
         alert('카메라 오류: ' + response.errorMessage);
         return;
@@ -234,39 +290,8 @@ const RegistProduct = () => {
   };
 
   // 이미지 삭제
-  const removeImage = (index) => {
+  const removeImage = index => {
     setImages(prevImages => prevImages.filter((_, i) => i !== index));
-  };
-
-  // 이미지 업로드 함수
-  const uploadImages = async () => {
-    try {
-      const formData = new FormData();
-      images.forEach((image, index) => {
-        formData.append('file', {
-          uri: image.uri,
-          type: image.type,
-          name: image.fileName || `image${index}.jpg`
-        });
-      });
-  
-      // sales API로 직접 이미지와 함께 데이터 전송
-      const response = await fetch(`${API_BASE_URL}/api/v1/sales`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
-      if (!response.ok) throw new Error('이미지 업로드 실패');
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('이미지 업로드 에러:', error);
-      throw error;
-    }
   };
 
   // 위치 권한 요청 함수
@@ -276,12 +301,12 @@ const RegistProduct = () => {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           {
-            title: "위치 권한 필요",
-            message: "현재 위치를 가져오기 위해 위치 권한이 필요합니다.",
-            buttonNeutral: "나중에 묻기",
-            buttonNegative: "취소",
-            buttonPositive: "확인"
-          }
+            title: '위치 권한 필요',
+            message: '현재 위치를 가져오기 위해 위치 권한이 필요합니다.',
+            buttonNeutral: '나중에 묻기',
+            buttonNegative: '취소',
+            buttonPositive: '확인',
+          },
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
@@ -299,124 +324,192 @@ const RegistProduct = () => {
     }
   };
 
-    // 현재 위치 가져오기
-    const getCurrentLocation = async () => {
-      const hasPermission = await requestLocationPermission();
-      
-      if (!hasPermission) {
-        alert('현재 위치를 가져오기 위해 위치 권한이 필요합니다.');
-        return;
-      }
-  
-      setIsLocationLoading(true);
-  
-      Geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const response = await axios.get(
-              `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${longitude}&y=${latitude}`,
-              {
-                headers: {
-                  'Authorization': 'KakaoAK 857d50bbbb53cca5de7f05ed3f8e8e99'
-                }
-              }
-            );
-  
-            if (!response.data.documents || response.data.documents.length === 0) {
-              throw new Error('주소 정보를 찾을 수 없습니다.');
-            }
-  
-            const addressInfo = response.data.documents[0];
-            setAddressInfo({
-              roadAddress: addressInfo.address.address_name,
-              zipCode: addressInfo.road_address?.zone_no || '',
-              longitude: longitude.toString(),
-              latitude: latitude.toString()
-            });
-          } catch (error) {
-            console.error('주소 변환 에러:', error);
-            alert('현재 위치의 주소를 가져오는데 실패했습니다.');
-          } finally {
-            setIsLocationLoading(false);
+  // 현재 위치 가져오기
+  const getCurrentLocation = async () => {
+    const hasPermission = await requestLocationPermission();
+
+    if (!hasPermission) {
+      alert('현재 위치를 가져오기 위해 위치 권한이 필요합니다.');
+      return;
+    }
+
+    setIsLocationLoading(true);
+
+    Geolocation.getCurrentPosition(
+      async position => {
+        const {latitude, longitude} = position.coords;
+        try {
+          const response = await axios.get(
+            `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${longitude}&y=${latitude}`,
+            {
+              headers: {
+                Authorization: 'KakaoAK 857d50bbbb53cca5de7f05ed3f8e8e99',
+              },
+            },
+          );
+
+          if (
+            !response.data.documents ||
+            response.data.documents.length === 0
+          ) {
+            throw new Error('주소 정보를 찾을 수 없습니다.');
           }
-        },
-        (error) => {
-          console.error('위치 가져오기 에러:', error);
-          alert('GPS 위치를 가져오는데 실패했습니다.');
+
+          const addressInfo = response.data.documents[0];
+          setAddressInfo({
+            roadAddress: addressInfo.address.address_name,
+            zipCode: addressInfo.road_address?.zone_no || '',
+            longitude: longitude.toString(),
+            latitude: latitude.toString(),
+          });
+        } catch (error) {
+          console.error('주소 변환 에러:', error);
+          alert('현재 위치의 주소를 가져오는데 실패했습니다.');
+        } finally {
           setIsLocationLoading(false);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-          distanceFilter: 10
         }
-      );
-    };
-  
-      // 주소 선택 핸들러
-  const handleAddressSelect = (addressData) => {
+      },
+      error => {
+        console.error('위치 가져오기 에러:', error);
+        alert('GPS 위치를 가져오는데 실패했습니다.');
+        setIsLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+        distanceFilter: 10,
+      },
+    );
+  };
+
+  // 주소 선택 핸들러
+  const handleAddressSelect = addressData => {
     setAddressInfo(addressData);
     setShowAddressModal(false);
   };
 
-  // 게시글 등록 함수
   const handleSubmit = async () => {
+    // 입력값 검증
     if (!addressInfo.roadAddress) {
       alert('주소를 입력해주세요.');
       return;
     }
-    if (!title || !ingredientName || !value || !contents) {
+    if (!title || !ingredientName || !value || !contents || !amount) {
       alert('모든 필수 항목을 입력해주세요.');
       return;
     }
-  
     if (images.length === 0) {
       alert('최소 1장의 이미지를 등록해주세요.');
       return;
     }
-  
+
+    // 수량 유효성 검사
+    const numAmount = parseInt(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      alert('유효한 수량을 입력해주세요.');
+      return;
+    }
+    if (numAmount > availableAmount) {
+      alert(`보유 수량(${availableAmount})을 초과할 수 없습니다.`);
+      return;
+    }
+
     setLoading(true);
+
     try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
       const formData = new FormData();
-      // 이미지 파일들 추가
+
+      // 모든 이미지를 배열로 추가
+      // 이미지 처리 부분을 수정
       images.forEach((image, index) => {
-        formData.append('file', {
-          uri: image.uri,
-          type: image.type,
-          name: image.fileName || `image${index}.jpg`
+        const imageUri =
+          Platform.OS === 'android'
+            ? image.uri
+            : image.uri.replace('file://', '');
+
+        formData.append('files', {
+          uri: imageUri,
+          type: image.type || 'image/jpeg',
+          name: image.fileName || `image${index}.jpg`,
+        });
+
+        // 디버깅을 위해 로깅 추가
+        console.log(`Image ${index}:`, {
+          uri: imageUri,
+          type: image.type || 'image/jpeg',
+          name: image.fileName || `image${index}.jpg`,
         });
       });
-  
-      // 나머지 데이터 추가
-      formData.append('ingredient_id', 0);  // API 문서에 있는 필수 필드들
-      formData.append('ingredient_name', ingredientName);
-      formData.append('seller_id', 0);
-      formData.append('value', Number(value));
-      formData.append('location_lat', Number(addressInfo.latitude));
-      formData.append('location_lon', Number(addressInfo.longitude));
-      formData.append('expiry_date', new Date().toISOString().split('T')[0]);
+
+      // 정수형 필드 변환
+      formData.append('ingredient_id', parseInt(ingredientId) || 0);
+      formData.append('seller_id', parseInt(sellerId) || 0);
+      formData.append('amount', parseInt(amount) || 0);
+
+      // 숫자형 필드 변환
+      formData.append('value', parseFloat(value) || 0);
+      formData.append('location_lat', parseFloat(addressInfo.latitude) || 0);
+      formData.append('location_lon', parseFloat(addressInfo.longitude) || 0);
+
+      // 문자열 필드
+      formData.append(
+        'expiry_date',
+        expiryDate || new Date().toISOString().split('T')[0],
+      );
+      formData.append('title', title?.trim() || '');
+      formData.append('ingredient_name', ingredientName?.trim() || '');
+      formData.append('contents', contents?.trim() || '');
       formData.append('status', 'Available');
-      formData.append('contents', contents);
-  
-      // API 호출
-      const response = await fetch(`${API_BASE_URL}/api/v1/sales`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+
+      // FormData 내용 확인
+      console.log('FormData contents:');
+      formData._parts.forEach(part => {
+        console.log(
+          `Field: ${part[0]}, Value: ${part[1]}, Type: ${typeof part[1]}`,
+        );
       });
-  
-      if (!response.ok) throw new Error('게시글 등록 실패');
-      
+
+      const response = await axios.post(
+        'http://3.34.59.23/api/v1/sales',
+        formData,
+        {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
       alert('게시글이 성공적으로 등록되었습니다.');
-      // 성공 후 처리 (예: 페이지 이동)
-      
     } catch (error) {
       console.error('등록 에러:', error);
-      alert('게시글 등록 중 오류가 발생했습니다.');
+
+      if (error.response) {
+        console.error('서버 응답 상세:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
+
+        // 상세 에러 메시지 표시
+        const errorMessage =
+          error.response.data?.detail?.[0]?.msg ||
+          error.response.data?.detail ||
+          '서버 오류가 발생했습니다';
+        alert(`등록 실패: ${errorMessage}`);
+      } else {
+        console.error('에러 메시지:', error.message);
+        alert(`오류가 발생했습니다: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -424,111 +517,119 @@ const RegistProduct = () => {
 
   return (
     <SafeContainer>
+      <IngredientBrowseModal
+        visible={showBrowseModal}
+        onClose={() => setShowBrowseModal(false)}
+        onSelect={handleIngredientSelect}
+      />
       {showAddressModal && (
         <Postcode
-          style={{ width: '100%', height: '100%' }}
+          style={{width: '100%', height: '100%'}}
           onSelected={handleAddressSelect}
           onError={console.error}
         />
       )}
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}
         onKeyboardDidShow={() => setKeyboardOpen(true)}
-        onKeyboardDidHide={() => setKeyboardOpen(false)}
-      >
+        onKeyboardDidHide={() => setKeyboardOpen(false)}>
         <Container>
-          <ContentContainer 
+          <ContentContainer
             keyboardOpen={keyboardOpen}
             showsVerticalScrollIndicator={true}
-            bounces={true}
-          >
+            bounces={true}>
+            <StyledText>등록된 식재료 선택</StyledText>
+            <ButtonContainer>
+              <StyledButton onPress={() => setShowBrowseModal(true)}>
+                <Icon3 name="shopping-basket" size={25} color="gray" />
+                <ButtonText> 찾아보기</ButtonText>
+              </StyledButton>
+            </ButtonContainer>
             <StyledText>사진 등록</StyledText>
             <ButtonContainer>
               <StyledButton onPress={checkCameraPermission}>
-                <Icon name="add-photo-alternate" size={30} color="gray"/>
+                <Icon name="add-photo-alternate" size={30} color="gray" />
               </StyledButton>
               <StyledButton onPress={checkGalleryPermission}>
-                <Icon name="add-a-photo" size={30} color="gray"/>
+                <Icon name="add-a-photo" size={30} color="gray" />
                 <ButtonText>({images.length}/5)</ButtonText>
               </StyledButton>
             </ButtonContainer>
 
             <ImageContainer>
               {images.map((image, index) => (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   onPress={() => removeImage(index)}
-                  activeOpacity={0.7}
-                >
-                  <SelectedImage 
-                    source={{ uri: image.uri }} 
-                    resizeMode="cover"
-                  />
+                  activeOpacity={0.7}>
+                  <SelectedImage source={{uri: image.uri}} resizeMode="cover" />
                 </TouchableOpacity>
               ))}
             </ImageContainer>
 
             <StyledText>제목</StyledText>
-            <InputBox 
+            <InputBox
               placeholder="글 제목을 입력하세요"
               value={title}
               onChangeText={setTitle}
             />
-            <StyledText>교환을 원하는 식재료</StyledText>
-            <InputBox 
-              placeholder="상세한 식재료명"
-              value={ingredientName}
-              onChangeText={setIngredientName}
+
+            <StyledText>수량</StyledText>
+            <InputBox
+              placeholder={`판매할 수량을 입력해주세요 (보유 수량: ${availableAmount})`}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={text => {
+                const numValue = parseInt(text) || 0;
+                if (numValue > availableAmount) {
+                  alert(`보유 수량(${availableAmount})을 초과할 수 없습니다.`);
+                  setAmount(availableAmount.toString());
+                } else {
+                  setAmount(text);
+                }
+              }}
             />
+
             <StyledText>판매 금액</StyledText>
-            <InputBox 
+            <InputBox
               placeholder="교환 대신 원하시는 판매금액을 입력해 주세요"
               keyboardType="numeric"
               value={value}
               onChangeText={setValue}
             />
             <StyledText>상세 설명</StyledText>
-            <DetailInputBox 
+            <DetailInputBox
               placeholder="거래 게시판에 올릴 식재료에 대한 설명을 상세하게 써주세요..."
               multiline={true}
               textAlignVertical="top"
               value={contents}
               onChangeText={setContents}
             />
-            <StyledText>희망 장소</StyledText>  
-            <InputBox 
+            <StyledText>희망 장소</StyledText>
+            <InputBox
               placeholder="주소를 검색하세요"
               value={addressInfo.roadAddress}
               editable={false}
             />
             <ButtonContainer>
-              <StyledButton
-                onPress={() => getCurrentLocation()}
-              >
-                <Icon name="gps-fixed" size={30} color="gray"/>
+              <StyledButton onPress={() => getCurrentLocation()}>
+                <Icon name="gps-fixed" size={30} color="gray" />
                 <ButtonText>내위치</ButtonText>
               </StyledButton>
-              <StyledButton
-                onPress={() => setShowAddressModal(true)}
-              >
-                <Icon name="search" size={30} color="gray"/>
+              <StyledButton onPress={() => setShowAddressModal(true)}>
+                <Icon name="search" size={30} color="gray" />
                 <ButtonText>주소검색</ButtonText>
               </StyledButton>
-              <StyledButton
-                onPress={() => getCurrentLocation()}
-              >
-                <Icon2 name="map-marker-radius" size={30} color="gray"/>
+              <StyledButton onPress={() => getCurrentLocation()}>
+                <Icon2 name="map-marker-radius" size={30} color="gray" />
                 <ButtonText>지도찾기</ButtonText>
               </StyledButton>
             </ButtonContainer>
           </ContentContainer>
-          
+
           <RegistButtonContainer>
-            <RegistButton 
-              onPress={handleSubmit}
-              disabled={loading}
-            >
+            <RegistButton onPress={handleSubmit} disabled={loading}>
               <RegistText>{loading ? '등록 중...' : '등록하기'}</RegistText>
             </RegistButton>
           </RegistButtonContainer>
