@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Platform,
   TextInput,
   Alert,
@@ -43,6 +42,17 @@ const InputLabel = styled.Text`
 `;
 
 const DateDisplayContainer = styled.TouchableOpacity`
+  width: 90%;
+  height: 40px;
+  border-width: 1px;
+  border-color: #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  padding: 0 10px;
+  justify-content: center;
+`;
+
+const TimeDisplayContainer = styled.TouchableOpacity`
   width: 90%;
   height: 40px;
   border-width: 1px;
@@ -99,33 +109,85 @@ const ButtonText = styled.Text`
 `;
 
 // 거래약속 모달 컴포넌트
-const TransactionModal = ({visible, onClose, onConfirm, itemTitle}) => {
+const TradeModal = ({visible, onClose, onConfirm, itemTitle, itemLocation}) => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [location, setLocation] = useState('');
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [location, setLocation] = useState(itemLocation || '');
 
-  // 날짜 형식 변환 함수 (2023년 12월 25일 오후 3:30)
-  const formatDate = date => {
+  // 날짜만 형식 변환 함수 (2023년 12월 25일)
+  const formatDateOnly = date => {
     if (!date) return '';
 
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
+
+    return `${year}년 ${month}월 ${day}일`;
+  };
+
+  // 시간만 형식 변환 함수 (오후 3:30)
+  const formatTimeOnly = date => {
+    if (!date) return '';
+
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? '오후' : '오전';
     const formattedHours = hours % 12 === 0 ? 12 : hours % 12;
 
-    return `${year}년 ${month}월 ${day}일 ${ampm} ${formattedHours}:${
+    return `${ampm} ${formattedHours}:${
       minutes < 10 ? '0' + minutes : minutes
     }`;
   };
 
+  // 날짜 및 시간 전체 형식 변환 함수
+  const formatDate = date => {
+    if (!date) return '';
+    return `${formatDateOnly(date)} ${formatTimeOnly(date)}`;
+  };
+
+  // 날짜 선택창 열기
+  const showDatePickerModal = () => {
+    setShowDatePicker(true);
+    setShowTimePicker(false);
+  };
+
+  // 시간 선택창 열기
+  const showTimePickerModal = () => {
+    setShowDatePicker(false);
+    setShowTimePicker(true);
+  };
+
   // 날짜 선택 핸들러
   const onDateChange = (event, selectedDate) => {
+    // 취소를 누르면 selectedDate가 undefined가 됨
+    if (event.type === 'dismissed' || !selectedDate) {
+      setShowDatePicker(false);
+      setShowTimePicker(false);
+      return;
+    }
+
     const currentDate = selectedDate || date;
-    setShowDatePicker(Platform.OS === 'ios');
-    setDate(currentDate);
+
+    // 현재 모드가 날짜인 경우
+    if (showDatePicker) {
+      // 기존 시간 정보는 유지하고 날짜만 업데이트
+      const updatedDate = new Date(date);
+      updatedDate.setFullYear(currentDate.getFullYear());
+      updatedDate.setMonth(currentDate.getMonth());
+      updatedDate.setDate(currentDate.getDate());
+      setDate(updatedDate);
+      setShowDatePicker(false);
+    }
+    // 현재 모드가 시간인 경우
+    else if (showTimePicker) {
+      // 기존 날짜 정보는 유지하고 시간만 업데이트
+      const updatedDate = new Date(date);
+      updatedDate.setHours(currentDate.getHours());
+      updatedDate.setMinutes(currentDate.getMinutes());
+      setDate(updatedDate);
+      setShowTimePicker(false);
+    }
   };
 
   // 확인 버튼 핸들러
@@ -139,6 +201,7 @@ const TransactionModal = ({visible, onClose, onConfirm, itemTitle}) => {
       date: date,
       location: location,
       formattedDate: formatDate(date),
+      time: formatTimeOnly(date), // 시간 정보 추가
     });
 
     // 입력값 초기화
@@ -151,6 +214,8 @@ const TransactionModal = ({visible, onClose, onConfirm, itemTitle}) => {
     // 입력값 초기화
     setDate(new Date());
     setLocation('');
+    setShowDatePicker(false);
+    setShowTimePicker(false);
     onClose();
   };
 
@@ -169,19 +234,36 @@ const TransactionModal = ({visible, onClose, onConfirm, itemTitle}) => {
             <DateDisplayText>{itemTitle || '상품명 없음'}</DateDisplayText>
           </DateDisplayContainer>
 
-          <InputLabel>약속 날짜 및 시간</InputLabel>
-          <DateDisplayContainer onPress={() => setShowDatePicker(true)}>
-            <DateDisplayText>{formatDate(date)}</DateDisplayText>
+          <InputLabel>약속 날짜</InputLabel>
+          <DateDisplayContainer onPress={showDatePickerModal}>
+            <DateDisplayText>{formatDateOnly(date)}</DateDisplayText>
           </DateDisplayContainer>
+
+          <InputLabel>약속 시간</InputLabel>
+          <TimeDisplayContainer onPress={showTimePickerModal}>
+            <DateDisplayText>{formatTimeOnly(date)}</DateDisplayText>
+          </TimeDisplayContainer>
 
           {showDatePicker && (
             <DateTimePicker
+              testID="dateTimePicker"
               value={date}
-              mode="datetime"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              mode="date"
+              is24Hour={false}
+              display="spinner" // 안드로이드에서도 iOS 스타일의 스피너로 표시
               onChange={onDateChange}
               minimumDate={new Date()}
-              locale="ko-KR"
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              testID="timeTimePicker"
+              value={date}
+              mode="time"
+              is24Hour={false}
+              display="spinner" // 안드로이드에서도 iOS 스타일의 스피너로 표시
+              onChange={onDateChange}
             />
           )}
 
@@ -206,4 +288,4 @@ const TransactionModal = ({visible, onClose, onConfirm, itemTitle}) => {
   );
 };
 
-export default TransactionModal;
+export default TradeModal;

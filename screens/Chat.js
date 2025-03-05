@@ -14,9 +14,10 @@ import {Text} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import TransactionModal from '../components/TradeModal';
+import TradeModal from '../components/Trade/TradeModal';
+import TradeMessage from '../components/Trade/TradeMessage';
+import NotificationMessage from '../components/Trade/NotificationMessage';
 
-// 스타일 컴포넌트는 그대로 유지합니다...
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
   background-color: white;
@@ -192,6 +193,13 @@ const Chat = ({route, navigation}) => {
   const [actualChatId, setActualChatId] = useState(initialChatId);
   const [realUserId, setRealUserId] = useState(null);
 
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [tradeInfo, setTradeInfo] = useState(null);
+  const [lastAppointmentDate, setLastAppointmentDate] = useState(null);
+
+  const [isTradeComplete, setIsTradeComplete] = useState(false);
+  const [isTradeButtonLoading, setIsTradeButtonLoading] = useState(false);
+
   const flatListRef = useRef();
 
   // 실제 사용자 ID 가져오기
@@ -238,6 +246,13 @@ const Chat = ({route, navigation}) => {
 
   // 컴포넌트 마운트 시 채팅 참가자 정보 로깅
   useEffect(() => {
+    console.log('=== 채팅 참가자 ID 정보 ===');
+    console.log('sellerId (판매자 ID):', sellerId);
+    console.log('buyerId (구매자 ID):', buyerId);
+    console.log('realUserId (현재 사용자 ID):', realUserId);
+    console.log('chatId:', initialChatId);
+    console.log('itemId (상품 ID):', itemId);
+
     logMessage('채팅 참가자 정보', {
       채팅방ID: initialChatId || '아직 생성되지 않음',
       상품ID: itemId,
@@ -779,10 +794,178 @@ const Chat = ({route, navigation}) => {
       }
     }, 1000);
   };
+
+  const isTradeMessage = text => {
+    return (
+      text.includes('[거래약속]') ||
+      text.includes('[거래수락]') ||
+      text.includes('[거래거절]')
+    );
+  };
+
+  const isNotificationMessage = text => {
+    return (
+      text.includes('[알림]') ||
+      text.includes('[도착알림]') ||
+      text.includes('[알림취소]')
+    );
+  };
+
+  // 거래 수락 메시지 보내기 함수
+  const sendTradeAcceptMessage = info => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
+      return;
+    }
+
+    const acceptMessage = `[거래수락] 약속시간: ${info.time}, 장소: ${info.location}`;
+
+    const messageData = {
+      type: 'chat',
+      content: acceptMessage,
+      chat_id: parseInt(actualChatId, 10),
+      sender_id: parseInt(realUserId, 10),
+      timestamp: new Date().toISOString(),
+    };
+
+    // 내 메시지 UI에 즉시 추가
+    const newMessage = {
+      id: Date.now().toString(),
+      text: acceptMessage,
+      sender: realUserId,
+      timestamp: new Date(),
+    };
+
+    // 메시지 추가
+    setMessages(prev => [...prev, newMessage]);
+
+    // 소켓으로 메시지 전송
+    try {
+      socket.send(JSON.stringify(messageData));
+
+      // 알림 메시지도 추가
+      const notificationMessage = `[알림] 거래가 수락되었습니다. 약속 시간에 도착하면 '도착 알리기' 버튼을 눌러주세요.`;
+      const notificationData = {
+        type: 'chat',
+        content: notificationMessage,
+        chat_id: parseInt(actualChatId, 10),
+        sender_id: parseInt(realUserId, 10),
+        timestamp: new Date().toISOString(),
+      };
+
+      // 알림 메시지 UI에 즉시 추가
+      const notificationMsg = {
+        id: Date.now().toString() + '_notification',
+        text: notificationMessage,
+        sender: realUserId,
+        timestamp: new Date(),
+      };
+
+      // 메시지 추가 - 약간의 시간차를 두고 추가
+      setTimeout(() => {
+        setMessages(prev => [...prev, notificationMsg]);
+        socket.send(JSON.stringify(notificationData));
+      }, 300);
+    } catch (error) {
+      logMessage('거래수락 메시지 전송 오류', error.message);
+      Alert.alert('오류', '메시지를 전송할 수 없습니다.');
+    }
+  };
+
+  // 거래 거절 메시지 보내기 함수
+  const sendTradeDeclineMessage = info => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
+      return;
+    }
+
+    const declineMessage = `[거래거절] 약속시간: ${info.time}, 장소: ${info.location}`;
+
+    const messageData = {
+      type: 'chat',
+      content: declineMessage,
+      chat_id: parseInt(actualChatId, 10),
+      sender_id: parseInt(realUserId, 10),
+      timestamp: new Date().toISOString(),
+    };
+
+    // 내 메시지 UI에 즉시 추가
+    const newMessage = {
+      id: Date.now().toString(),
+      text: declineMessage,
+      sender: realUserId,
+      timestamp: new Date(),
+    };
+
+    // 메시지 추가
+    setMessages(prev => [...prev, newMessage]);
+
+    // 소켓으로 메시지 전송
+    try {
+      socket.send(JSON.stringify(messageData));
+      Alert.alert('알림', '거래 약속을 거절했습니다.');
+    } catch (error) {
+      logMessage('거래거절 메시지 전송 오류', error.message);
+      Alert.alert('오류', '메시지를 전송할 수 없습니다.');
+    }
+  };
+
+  // Chat 컴포넌트 내 renderMessage 함수 수정
   const renderMessage = ({item}) => {
     // 내 메시지인지 판단 (실제 사용자 ID와 비교)
     const isMyMessage = String(item.sender) === String(realUserId);
 
+    // 디버깅용 로그 추가
+    console.log('메시지 렌더링:', {
+      메시지: item.text.substring(0, 30),
+      타입: item.text.includes('[거래')
+        ? '거래메시지'
+        : item.text.includes('[알림')
+        ? '알림메시지'
+        : '일반메시지',
+      내메시지여부: isMyMessage,
+      buyerId: buyerId,
+      sellerId: sellerId,
+      itemId: itemId,
+      chatId: actualChatId, // 채팅방 ID 추가
+      realUserId: realUserId,
+    });
+
+    // 거래약속 메시지인 경우 특별한 컴포넌트 렌더링
+    if (isTradeMessage(item.text)) {
+      // 이 메시지에 저장된 날짜 객체가 있으면 사용, 없으면 마지막으로 저장된 날짜 사용
+      const appointmentDate = item.appointmentDate || lastAppointmentDate;
+
+      return (
+        <TradeMessage
+          message={item.text}
+          time={formatRelativeTime(item.timestamp)}
+          isSender={isMyMessage}
+          onAccept={sendTradeAcceptMessage}
+          onDecline={sendTradeDeclineMessage}
+          buyerId={buyerId}
+          sellerId={sellerId}
+          itemId={itemId}
+          chatId={actualChatId} // 채팅방 ID 전달
+          appointmentDate={item.appointmentDate || lastAppointmentDate}
+        />
+      );
+    }
+
+    // 알림 메시지인 경우 NotificationMessage 컴포넌트 렌더링
+    if (isNotificationMessage(item.text)) {
+      return (
+        <NotificationMessage
+          message={item.text}
+          time={formatRelativeTime(item.timestamp)}
+          isSender={isMyMessage}
+          onNotifyArrival={sendArrivalNotification}
+          onCancel={sendNotificationCancel}
+        />
+      );
+    }
+
+    // 일반 메시지 렌더링 (기존 코드)
     return isMyMessage ? (
       <MyMessage>
         <MessageText isMyMessage={true}>{item.text}</MessageText>
@@ -798,6 +981,212 @@ const Chat = ({route, navigation}) => {
         </TimeText>
       </OtherMessage>
     );
+  };
+
+  const openTradeModal = () => {
+    setIsModalVisible(true);
+  };
+
+  // 거래 모달 닫기 함수
+  const closeTradeModal = () => {
+    setIsModalVisible(false);
+  };
+
+  // 거래 약속 확인 함수
+  // TradeModal의 결과를 처리하는 함수 수정
+  const confirmTradeModal = info => {
+    setTradeInfo(info);
+    setIsModalVisible(false);
+
+    // 선택된 날짜 객체 저장
+    setLastAppointmentDate(info.date);
+
+    // 거래 약속 정보를 메시지로 전송
+    const tradeMessage = `[거래약속] 약속시간: ${info.formattedDate}, 장소: ${info.location}`;
+
+    // 거래 약속 메시지를 채팅에 추가
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const messageData = {
+        type: 'chat',
+        content: tradeMessage,
+        chat_id: parseInt(actualChatId, 10),
+        sender_id: parseInt(realUserId, 10),
+        timestamp: new Date().toISOString(),
+      };
+
+      // 내 메시지 UI에 즉시 추가
+      const newMessage = {
+        id: Date.now().toString(),
+        text: tradeMessage,
+        sender: realUserId,
+        timestamp: new Date(),
+        appointmentDate: info.date, // 날짜 객체도 메시지에 저장
+      };
+
+      // 메시지 추가
+      setMessages(prev => [...prev, newMessage]);
+
+      // 소켓으로 메시지 전송
+      try {
+        socket.send(JSON.stringify(messageData));
+        // ... 기존 코드 ...
+      } catch (error) {
+        // ... 기존 코드 ...
+      }
+    } else {
+      Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
+    }
+  };
+
+  // 도착 알림 메시지 보내기 함수
+  const sendArrivalNotification = async () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
+      return;
+    }
+
+    // 상대방에게 보낼 도착 알림 (취소 버튼 없는 메시지)
+    const arrivalMessageForOther = `[도착알림:simple] 상대방이 거래 장소에 도착했습니다.`;
+
+    // 본인에게 보낼 만료 알림 (취소 버튼 있는 메시지)
+    const overdueMessageForMe = `[알림:overdue] 거래 약속 시간이 초과되었습니다. 거래를 취소하시겠습니까?`;
+
+    const otherMessageData = {
+      type: 'chat',
+      content: arrivalMessageForOther,
+      chat_id: parseInt(actualChatId, 10),
+      sender_id: parseInt(realUserId, 10),
+      timestamp: new Date().toISOString(),
+    };
+
+    const myMessageData = {
+      type: 'chat',
+      content: overdueMessageForMe,
+      chat_id: parseInt(actualChatId, 10),
+      sender_id: parseInt(realUserId, 10),
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      // 상대방에게 알림 메시지 전송
+      socket.send(JSON.stringify(otherMessageData));
+
+      // 본인에게 만료 메시지 전송
+      socket.send(JSON.stringify(myMessageData));
+
+      logMessage('도착 및 만료 알림 메시지 전송 성공', {
+        채팅방ID: actualChatId,
+      });
+
+      Alert.alert('알림', '도착 알림을 보냈습니다.');
+    } catch (error) {
+      logMessage('도착/만료 알림 메시지 전송 오류', error.message);
+      Alert.alert('오류', '알림 메시지를 보낼 수 없습니다.');
+    }
+    // 도착 알림 성공 후 거래 상태 확인 추가
+    checkTradeStatus(3); // 하드코딩된 거래 ID (필요하다면 실제 거래 ID로 교체)
+  };
+
+  // 알림 취소 메시지 보내기 함수
+  const sendNotificationCancel = () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
+      return;
+    }
+
+    const cancelMessage = `[알림취소] 이전 알림이 취소되었습니다.`;
+
+    const messageData = {
+      type: 'chat',
+      content: cancelMessage,
+      chat_id: parseInt(actualChatId, 10),
+      sender_id: parseInt(realUserId, 10),
+      timestamp: new Date().toISOString(),
+    };
+
+    // 내 메시지 UI에 즉시 추가
+    const newMessage = {
+      id: Date.now().toString(),
+      text: cancelMessage,
+      sender: realUserId,
+      timestamp: new Date(),
+    };
+
+    // 메시지 추가
+    setMessages(prev => [...prev, newMessage]);
+
+    // 소켓으로 메시지 전송
+    try {
+      socket.send(JSON.stringify(messageData));
+      logMessage('알림취소 메시지 전송 성공', {
+        메시지ID: newMessage.id,
+        채팅방ID: actualChatId,
+      });
+    } catch (error) {
+      logMessage('알림취소 메시지 전송 오류', error.message);
+      Alert.alert('오류', '메시지를 전송할 수 없습니다.');
+    }
+  };
+
+  // 거래 상태 확인 함수 추가
+  const checkTradeStatus = async transId => {
+    setIsTradeButtonLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        setIsTradeButtonLoading(false);
+        return;
+      }
+
+      console.log('=== 거래 상태 확인 API 요청 ===');
+      console.log('거래 ID:', transId);
+
+      const response = await axios.post(
+        'http://3.34.59.23/api/v1/transaction/success',
+        {trans_id: transId},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log('API 응답:', response.data);
+
+      // 응답 처리 (0이면 거래 완료 가능 상태)
+      if (response.data === 0) {
+        setIsTradeComplete(true);
+        // 필요하다면 AsyncStorage에 상태 저장
+        await AsyncStorage.setItem(`trade_complete_${transId}`, 'true');
+      } else if (response.data === -1) {
+        Alert.alert(
+          '알림',
+          '아직 거래 완료를 할 수 없습니다. 상대방의 도착을 기다려주세요.',
+        );
+      } else {
+        Alert.alert('오류', '알 수 없는 응답입니다. 나중에 다시 시도하세요.');
+      }
+    } catch (error) {
+      console.error('거래 상태 확인 오류:', error);
+      Alert.alert('오류', '서버와 통신 중 문제가 발생했습니다.');
+    } finally {
+      setIsTradeButtonLoading(false);
+    }
+  };
+
+  // 거래 완료 함수 추가
+  const completeTransaction = async () => {
+    try {
+      // 여기에 거래 완료 처리 로직 구현
+      // 예: API 호출, 상태 업데이트 등
+      Alert.alert('성공', '거래가 성공적으로 완료되었습니다.');
+      // 필요하다면 화면 이동이나 후속 처리
+    } catch (error) {
+      console.error('거래 완료 오류:', error);
+      Alert.alert('오류', '거래 완료 처리 중 문제가 발생했습니다.');
+    }
   };
 
   // 로딩 화면
@@ -844,17 +1233,22 @@ const Chat = ({route, navigation}) => {
               </ProductInfo>
             </ProductLeftFrame>
             <ProductLeftFrame>
-              <TradeButton o>
-                <Text>거래하기</Text>
-              </TradeButton>
+              {isTradeButtonLoading ? (
+                <TradeButton disabled>
+                  <ActivityIndicator size="small" color="#fff" />
+                </TradeButton>
+              ) : isTradeComplete ? (
+                <TradeButton
+                  onPress={completeTransaction}
+                  style={{backgroundColor: '#4CAF50'}}>
+                  <Text style={{color: 'white'}}>거래완료하기</Text>
+                </TradeButton>
+              ) : (
+                <TradeButton onPress={openTradeModal}>
+                  <Text>거래하기</Text>
+                </TradeButton>
+              )}
             </ProductLeftFrame>
-
-            <TransactionModal
-              visible={modalVisible}
-              onClose={closeTransactionModal}
-              onConfirm={confirmTransaction}
-              itemTitle={productData?.title}
-            />
           </ProductInfoContainer>
 
           <ChatContainer>
@@ -887,6 +1281,18 @@ const Chat = ({route, navigation}) => {
               <Icon name="send" size={18} color="white" />
             </SendButton>
           </InputContainer>
+
+          <TradeModal
+            visible={isModalVisible}
+            onClose={closeTradeModal}
+            onConfirm={confirmTradeModal}
+            itemTitle={productData?.title}
+            itemLocation={
+              productData?.location
+                ? `${productData.location.latitude}, ${productData.location.longitude}`
+                : ''
+            } // 위치 정보 전달
+          />
         </Container>
       </KeyboardAvoidingView>
     </SafeContainer>
