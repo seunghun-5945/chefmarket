@@ -88,6 +88,7 @@ const NotificationMessage = ({
   isSender,
   onNotifyArrival,
   onCancel,
+  itemId, // itemId 파라미터 추가
 }) => {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -100,9 +101,6 @@ const NotificationMessage = ({
     : false;
   const isGeneralNotification = message ? message.includes('[알림]') : false;
   const showArrivalButton = isGeneralNotification; // 일반 알림 메시지면 도착 알리기 버튼 표시
-
-  // 거래 ID를 3으로 고정
-  const transactionId = 3;
 
   // 컴포넌트 마운트 시 사용자 정보 가져오기
   useEffect(() => {
@@ -172,49 +170,74 @@ const NotificationMessage = ({
     }
   };
 
-  // 현재 위치 가져오기
-  const getCurrentLocation = async () => {
-    setLocationLoading(true);
-    try {
-      const hasPermission = await requestLocationPermission();
+  // 현재 위치 가져오기 함수 개선
+  const getCurrentLocation = () => {
+    return new Promise(async (resolve, reject) => {
+      setLocationLoading(true);
+      try {
+        const hasPermission = await requestLocationPermission();
 
-      if (!hasPermission) {
-        Alert.alert(
-          '알림',
-          '현재 위치를 가져오기 위해 위치 권한이 필요합니다.',
+        if (!hasPermission) {
+          Alert.alert(
+            '알림',
+            '현재 위치를 가져오기 위해 위치 권한이 필요합니다.',
+          );
+          setLocationLoading(false);
+          reject('위치 권한이 없습니다.');
+          return;
+        }
+
+        Geolocation.getCurrentPosition(
+          position => {
+            const {longitude, latitude} = position.coords;
+
+            // 완전한 위치 정보인지 확인
+            if (longitude === undefined || latitude === undefined) {
+              console.error('위치 정보가 불완전합니다:', {longitude, latitude});
+              setLocationLoading(false);
+              reject('위치 정보가 불완전합니다.');
+              return;
+            }
+
+            // 위치 데이터 배열 생성
+            const locationData = [longitude, latitude];
+
+            // 위치 데이터 검증 로그
+            console.log('위치 데이터 획득 성공:', {
+              경도: longitude,
+              위도: latitude,
+              배열: locationData,
+            });
+
+            // 상태 업데이트 및 Promise 해결
+            setLocation(locationData);
+            setLocationLoading(false);
+            resolve(locationData);
+          },
+          error => {
+            console.error('위치 가져오기 에러:', error);
+            Alert.alert('오류', 'GPS 위치를 가져오는데 실패했습니다.');
+            setLocationLoading(false);
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true, // 높은 정확도 사용
+            timeout: 20000, // 타임아웃 시간 증가
+            maximumAge: 1000, // 캐시된 위치 사용 기간 줄임
+            distanceFilter: 0, // 모든 위치 변화 감지
+          },
         );
+      } catch (error) {
+        console.error('위치 권한 요청 중 오류:', error);
+        Alert.alert('오류', '위치 정보를 가져오는데 실패했습니다.');
         setLocationLoading(false);
-        return;
+        reject(error);
       }
-
-      Geolocation.getCurrentPosition(
-        position => {
-          const {longitude, latitude} = position.coords;
-          setLocation([longitude, latitude]);
-          console.log('현재 위치:', longitude, latitude);
-          setLocationLoading(false);
-        },
-        error => {
-          console.error('위치 가져오기 에러:', error);
-          Alert.alert('오류', 'GPS 위치를 가져오는데 실패했습니다.');
-          setLocationLoading(false);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-          distanceFilter: 10,
-        },
-      );
-    } catch (error) {
-      console.error('위치 권한 요청 중 오류:', error);
-      Alert.alert('오류', '위치 정보를 가져오는데 실패했습니다.');
-      setLocationLoading(false);
-    }
+    });
   };
 
-  // 도착 알림 API 요청 함수
-  const notifyArrival = async () => {
+  // notifyArrival 함수 수정 - 위도와 경도 모두 포함
+  const notifyArrival = async locationData => {
     setLoading(true);
 
     try {
@@ -225,32 +248,45 @@ const NotificationMessage = ({
         return false;
       }
 
-      // API 요청 데이터 구성
-      const requestData = {
-        trans_id: transactionId,
-        id: userId,
-        location: location, // [경도, 위도] 형식
-      };
-
-      // 사용자 정보 가져오기
-      let userRole = '알 수 없음';
-      try {
-        const userInfo = await AsyncStorage.getItem('userInfo');
-        if (userInfo) {
-          const parsedInfo = JSON.parse(userInfo);
-          userRole = parsedInfo.isBuyer ? '구매자' : '판매자';
-        }
-      } catch (e) {
-        console.error('사용자 역할 확인 오류:', e);
+      // itemId 값 확인
+      if (!itemId) {
+        console.error('상품 ID가 없습니다.');
+        Alert.alert('오류', '상품 정보가 없습니다.');
+        setLoading(false);
+        return false;
       }
 
-      // 핵심 정보만 콘솔에 출력
-      console.log('======= 도착 알림 API 정보 =======');
-      console.log(`보낸 사람 ID: ${userId}`);
-      console.log(`거래 ID: ${transactionId}`);
-      console.log(`위치 정보: [${location[0]}, ${location[1]}]`);
-      console.log(`사용자 역할: ${userRole}`);
-      console.log('================================');
+      // 위치 데이터 확인
+      if (
+        !locationData ||
+        locationData.length < 2 ||
+        locationData[0] === null ||
+        locationData[1] === null
+      ) {
+        console.error('위치 데이터가 부족합니다:', locationData);
+        Alert.alert('오류', '위치 정보를 완전히 가져오지 못했습니다.');
+        setLoading(false);
+        return false;
+      }
+
+      // 위치 데이터 로깅
+      console.log('위치 데이터 확인:', {
+        경도: locationData[0],
+        위도: locationData[1],
+      });
+
+      // API 요청 데이터 구성 - 경도와 위도 모두 포함
+      const requestData = {
+        sale_id: itemId,
+        id: userId,
+        location: locationData, // 경도와 위도 모두 포함
+      };
+
+      // 요청 로깅
+      console.log('======= 도착 알림 API 요청 데이터 =======');
+      console.log('요청 URL: http://3.34.59.23/api/v1/transaction/arrive');
+      console.log('요청 본문(JSON):', JSON.stringify(requestData, null, 2));
+      console.log('==========================================');
 
       // API 호출
       const response = await axios.post(
@@ -264,27 +300,24 @@ const NotificationMessage = ({
         },
       );
 
-      // 여기에 응답 데이터 로깅 추가
+      // 응답 로깅
       console.log('======= 도착 알림 API 응답 =======');
       console.log('응답 상태 코드:', response.status);
       console.log('응답 데이터:', response.data);
       console.log('=================================');
 
-      // 응답 결과 저장
+      // 응답 결과 처리
       const success = response.data === true || response.data === 'true';
 
-      // 도착 알림 상태를 AsyncStorage에 저장 (Chat 컴포넌트에서 사용)
       if (success) {
         try {
-          await AsyncStorage.setItem(`arrival_${transactionId}`, 'true');
-          console.log(`거래 ID ${transactionId}의 도착 상태가 저장되었습니다.`);
+          await AsyncStorage.setItem(`arrival_${itemId}`, 'true');
+          console.log(`상품 ID ${itemId}의 도착 상태가 저장되었습니다.`);
 
-          // 추가: 성공 시 거래 상태 체크 트리거
           if (onNotifyArrival) {
-            onNotifyArrival(transactionId); // 거래 ID 전달
+            console.log(`onNotifyArrival 콜백 호출: itemId=${itemId}`);
+            onNotifyArrival(itemId);
           }
-
-          Alert.alert('성공', '도착 알림이 성공적으로 전송되었습니다.');
         } catch (error) {
           console.error('도착 상태 저장 오류:', error);
         }
@@ -295,7 +328,7 @@ const NotificationMessage = ({
     } catch (error) {
       console.error('도착 알림 API 오류:', error.message);
 
-      // 에러 응답이 있는 경우 해당 데이터도 출력
+      // 에러 응답 로깅
       if (error.response) {
         console.log('======= API 에러 응답 =======');
         console.log('에러 상태 코드:', error.response.status);
@@ -309,33 +342,73 @@ const NotificationMessage = ({
     }
   };
 
-  // 알림 도착 버튼 핸들러
+  // handleNotifyArrival 함수를 다음과 같이 수정합니다:
   const handleNotifyArrival = () => {
     Alert.alert('도착 알림', '도착 알림을 보내시겠습니까?', [
       {text: '취소', style: 'cancel'},
       {
         text: '알림 보내기',
         onPress: async () => {
-          // 현재 위치 정보 가져오기
-          await getCurrentLocation();
+          try {
+            // 로딩 상태 표시
+            setLocationLoading(true);
 
-          logDataWithTimestamp('도착 알림 확인됨', {
-            transactionId,
-            userId,
-            location,
-          });
+            // 위치 정보 가져오기
+            console.log('위치 정보 요청 시작...');
+            const locationData = await getCurrentLocation();
 
-          // 백엔드 API 호출
-          const success = await notifyArrival();
+            // 위치 데이터 유효성 검증
+            if (
+              !locationData ||
+              locationData.length < 2 ||
+              locationData[0] === null ||
+              locationData[1] === null
+            ) {
+              console.error('위치 데이터 유효성 검증 실패:', locationData);
+              Alert.alert(
+                '오류',
+                '정확한 위치를 가져오지 못했습니다. 다시 시도해주세요.',
+              );
+              setLocationLoading(false);
+              return;
+            }
 
-          logDataWithTimestamp('도착 알림 결과', {
-            성공여부: success,
-          });
+            console.log('위치 정보 획득 완료:', locationData);
 
-          if (success) {
-            // onNotifyArrival 콜백 호출 (메시지 전송 등을 위해)
-            if (onNotifyArrival) onNotifyArrival();
-            Alert.alert('성공', '도착 알림이 성공적으로 전송되었습니다.');
+            // 위치 정보 로그 기록
+            logDataWithTimestamp('도착 알림 확인됨', {
+              itemId,
+              userId,
+              location: locationData,
+            });
+
+            // API 호출
+            console.log('도착 알림 API 호출 시작...');
+            const success = await notifyArrival(locationData);
+
+            console.log('도착 알림 API 호출 결과:', success);
+
+            // 결과 로그 기록
+            logDataWithTimestamp('도착 알림 결과', {
+              성공여부: success,
+            });
+
+            if (success) {
+              // 도착 알림 성공 후 즉시 onNotifyArrival 콜백 호출
+              if (onNotifyArrival) {
+                console.log('콜백 함수 호출 - 취소 알림 메시지 표시 요청');
+                onNotifyArrival(itemId);
+              }
+            }
+          } catch (error) {
+            console.error('도착 알림 처리 오류:', error);
+            Alert.alert(
+              '오류',
+              '위치 정보를 가져오거나 서버와 통신하는 중 문제가 발생했습니다.',
+            );
+          } finally {
+            // 로딩 상태 해제
+            setLocationLoading(false);
           }
         },
       },

@@ -17,6 +17,7 @@ import axios from 'axios';
 import TradeModal from '../components/Trade/TradeModal';
 import TradeMessage from '../components/Trade/TradeMessage';
 import NotificationMessage from '../components/Trade/NotificationMessage';
+import CancelNotification from '../components/Trade/CancelNotification';
 
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
@@ -169,6 +170,18 @@ const TradeButton = styled.TouchableOpacity`
   background-color: #eee;
 `;
 
+const CompleteTradeButton = styled.TouchableOpacity`
+  border-radius: 5px;
+  align-items: center;
+  padding: 10px;
+  background-color: #4caf50; /* 초록색 */
+`;
+
+const CompleteButtonText = styled.Text`
+  color: white;
+  font-weight: bold;
+`;
+
 // 로그 유틸리티 함수
 const logMessage = (prefix, data) => {
   const timestamp = new Date().toISOString();
@@ -199,6 +212,8 @@ const Chat = ({route, navigation}) => {
 
   const [isTradeComplete, setIsTradeComplete] = useState(false);
   const [isTradeButtonLoading, setIsTradeButtonLoading] = useState(false);
+  const [isArrived, setIsArrived] = useState(false);
+  const [showCancelNotification, setShowCancelNotification] = useState(false);
 
   const flatListRef = useRef();
 
@@ -263,19 +278,24 @@ const Chat = ({route, navigation}) => {
     });
   }, []);
 
-  // 시간 포맷팅 함수
-  const formatTime = date => {
-    try {
-      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-        return '--:--';
+  useEffect(() => {
+    const checkArrivalStatus = async () => {
+      try {
+        const arrivalStatus = await AsyncStorage.getItem(`arrival_${itemId}`);
+        setIsArrived(arrivalStatus === 'true');
+        logMessage('도착 상태 확인', {
+          상품ID: itemId,
+          도착상태: arrivalStatus === 'true',
+        });
+      } catch (error) {
+        console.error('도착 상태 확인 오류:', error);
       }
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch (error) {
-      return '--:--';
+    };
+
+    if (itemId) {
+      checkArrivalStatus();
     }
-  };
+  }, [itemId]);
 
   // 시간 포맷팅 함수 - 수정
   const formatRelativeTime = date => {
@@ -392,12 +412,21 @@ const Chat = ({route, navigation}) => {
         }
 
         // 히스토리 메시지를 상태에 맞게 변환
-        const historyMessages = parsedData.messages.map(msg => ({
-          id: msg.id.toString(),
-          text: msg.content,
-          sender: msg.sender_id,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-        }));
+        const historyMessages = parsedData.messages.map(msg => {
+          const msgObj = {
+            id: msg.id.toString(),
+            text: msg.content,
+            sender: msg.sender_id,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          };
+
+          // 취소 알림 메시지 식별
+          if (msg.content.includes('[알림:취소알림]')) {
+            msgObj.isCancelNotification = true;
+          }
+
+          return msgObj;
+        });
 
         // 히스토리의 각 메시지에 대한 발신자/수신자 정보 로깅
         historyMessages.forEach((msg, index) => {
@@ -490,6 +519,11 @@ const Chat = ({route, navigation}) => {
         sender: messageSenderId,
         timestamp: new Date(),
       };
+
+      // 취소 알림 메시지 식별
+      if (messageContent.includes('[알림:취소알림]')) {
+        newMessage.isCancelNotification = true;
+      }
 
       // 상태 업데이트 (함수형 업데이트 사용)
       setMessages(prev => [...prev, newMessage]);
@@ -910,8 +944,58 @@ const Chat = ({route, navigation}) => {
     }
   };
 
-  // Chat 컴포넌트 내 renderMessage 함수 수정
-  const renderMessage = ({item}) => {
+  // 4. 약속 취소 처리 함수 추가
+  const handleCancelAppointment = async itemIdFromCancel => {
+    logMessage('약속 취소 처리', {
+      상품ID: itemIdFromCancel || itemId,
+    });
+
+    // 취소 알림 숨기기
+    setShowCancelNotification(false);
+
+    // 도착 상태 해제
+    setIsArrived(false);
+
+    // 취소 메시지 전송
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      const cancelMessage = `[약속취소] 거래 약속이 취소되었습니다.`;
+
+      const messageData = {
+        type: 'chat',
+        content: cancelMessage,
+        chat_id: parseInt(actualChatId, 10),
+        sender_id: parseInt(realUserId, 10),
+        timestamp: new Date().toISOString(),
+      };
+
+      // 메시지 추가
+      const newMessage = {
+        id: Date.now().toString(),
+        text: cancelMessage,
+        sender: realUserId,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, newMessage]);
+
+      // 소켓으로 메시지 전송
+      socket.send(JSON.stringify(messageData));
+      logMessage('약속 취소 메시지 전송 성공', {
+        메시지ID: newMessage.id,
+        채팅방ID: actualChatId,
+      });
+    }
+  };
+
+  // 5. 취소 알림 무시 처리 함수 추가
+  const handleIgnoreCancelNotification = () => {
+    setShowCancelNotification(false);
+    logMessage('취소 알림 무시됨', {
+      상품ID: itemId,
+    });
+  };
+
+  const renderMessage = ({item, index}) => {
     // 내 메시지인지 판단 (실제 사용자 ID와 비교)
     const isMyMessage = String(item.sender) === String(realUserId);
 
@@ -927,7 +1011,7 @@ const Chat = ({route, navigation}) => {
       buyerId: buyerId,
       sellerId: sellerId,
       itemId: itemId,
-      chatId: actualChatId, // 채팅방 ID 추가
+      chatId: actualChatId,
       realUserId: realUserId,
     });
 
@@ -946,7 +1030,7 @@ const Chat = ({route, navigation}) => {
           buyerId={buyerId}
           sellerId={sellerId}
           itemId={itemId}
-          chatId={actualChatId} // 채팅방 ID 전달
+          chatId={actualChatId}
           appointmentDate={item.appointmentDate || lastAppointmentDate}
         />
       );
@@ -961,8 +1045,47 @@ const Chat = ({route, navigation}) => {
           isSender={isMyMessage}
           onNotifyArrival={sendArrivalNotification}
           onCancel={sendNotificationCancel}
+          itemId={itemId}
         />
       );
+    }
+
+    // 취소 알림 메시지 특별 처리 (수정된 부분)
+    if (item.isCancelNotification || item.text.includes('[알림:취소알림]')) {
+      // 이미 이전에 취소 알림이 표시되었는지 확인
+      const isFirstCancelNotification = !messages
+        .slice(0, index)
+        .some(
+          msg =>
+            msg.isCancelNotification || msg.text.includes('[알림:취소알림]'),
+        );
+
+      // 첫 번째 취소 알림이고, 내가 보낸 메시지일 때만 취소 버튼이 있는 알림을 보여줌
+      if (isFirstCancelNotification && isMyMessage) {
+        return (
+          <CancelNotification
+            message="거래 장소에 도착했습니다. 약속을 취소하려면 아래 버튼을 눌러주세요."
+            time={formatRelativeTime(item.timestamp)}
+            onCancelAppointment={handleCancelAppointment}
+            onIgnore={handleIgnoreCancelNotification}
+            itemId={itemId}
+            chatId={actualChatId}
+          />
+        );
+      }
+      // 상대방의 취소 알림은 일반 알림으로 표시 (버튼 없이)
+      else if (isFirstCancelNotification && !isMyMessage) {
+        return (
+          <NotificationMessage
+            message="상대방이 거래 장소에 도착했습니다."
+            time={formatRelativeTime(item.timestamp)}
+            isSender={false}
+            itemId={itemId}
+          />
+        );
+      }
+      // 중복된 취소 알림은 표시하지 않음
+      return null;
     }
 
     // 일반 메시지 렌더링 (기존 코드)
@@ -1038,19 +1161,19 @@ const Chat = ({route, navigation}) => {
     }
   };
 
-  // 도착 알림 메시지 보내기 함수
   const sendArrivalNotification = async () => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       Alert.alert('연결 오류', '채팅 서버에 연결되어 있지 않습니다.');
       return;
     }
 
-    // 상대방에게 보낼 도착 알림 (취소 버튼 없는 메시지)
+    // 상대방에게 보낼 도착 알림
     const arrivalMessageForOther = `[도착알림:simple] 상대방이 거래 장소에 도착했습니다.`;
 
-    // 본인에게 보낼 만료 알림 (취소 버튼 있는 메시지)
-    const overdueMessageForMe = `[알림:overdue] 거래 약속 시간이 초과되었습니다. 거래를 취소하시겠습니까?`;
+    // 나에게만 표시될 취소 알림 (취소 버튼 포함)
+    const cancelNotificationMessage = `[알림:취소알림] 거래 장소에 도착했습니다. 약속을 취소하려면 아래 버튼을 눌러주세요.`;
 
+    // 메시지 객체 생성
     const otherMessageData = {
       type: 'chat',
       content: arrivalMessageForOther,
@@ -1059,9 +1182,9 @@ const Chat = ({route, navigation}) => {
       timestamp: new Date().toISOString(),
     };
 
-    const myMessageData = {
+    const cancelMessageData = {
       type: 'chat',
-      content: overdueMessageForMe,
+      content: cancelNotificationMessage,
       chat_id: parseInt(actualChatId, 10),
       sender_id: parseInt(realUserId, 10),
       timestamp: new Date().toISOString(),
@@ -1071,20 +1194,31 @@ const Chat = ({route, navigation}) => {
       // 상대방에게 알림 메시지 전송
       socket.send(JSON.stringify(otherMessageData));
 
-      // 본인에게 만료 메시지 전송
-      socket.send(JSON.stringify(myMessageData));
+      // 취소 알림 메시지를 UI에 즉시 추가 (서버에는 보내지 않음)
+      const cancelNotificationMsg = {
+        id: Date.now().toString() + '_cancel',
+        text: cancelNotificationMessage,
+        sender: realUserId,
+        timestamp: new Date(),
+        isCancelNotification: true,
+      };
 
-      logMessage('도착 및 만료 알림 메시지 전송 성공', {
+      // UI에만 추가 (로컬 상태)
+      setMessages(prev => [...prev, cancelNotificationMsg]);
+
+      // 도착 상태 저장 (AsyncStorage는 로컬 상태 추적 용도)
+      await AsyncStorage.setItem(`arrival_${itemId}`, 'true');
+      setIsArrived(true);
+
+      logMessage('도착 알림 메시지 전송 성공', {
         채팅방ID: actualChatId,
       });
 
       Alert.alert('알림', '도착 알림을 보냈습니다.');
     } catch (error) {
-      logMessage('도착/만료 알림 메시지 전송 오류', error.message);
+      logMessage('도착 알림 메시지 전송 오류', error.message);
       Alert.alert('오류', '알림 메시지를 보낼 수 없습니다.');
     }
-    // 도착 알림 성공 후 거래 상태 확인 추가
-    checkTradeStatus(3); // 하드코딩된 거래 ID (필요하다면 실제 거래 ID로 교체)
   };
 
   // 알림 취소 메시지 보내기 함수
@@ -1128,9 +1262,9 @@ const Chat = ({route, navigation}) => {
     }
   };
 
-  // 거래 상태 확인 함수 추가
-  const checkTradeStatus = async transId => {
+  const completeTransaction = async () => {
     setIsTradeButtonLoading(true);
+
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
@@ -1139,12 +1273,12 @@ const Chat = ({route, navigation}) => {
         return;
       }
 
-      console.log('=== 거래 상태 확인 API 요청 ===');
-      console.log('거래 ID:', transId);
-
+      // 거래 완료 API 호출 (success 엔드포인트 사용)
       const response = await axios.post(
         'http://3.34.59.23/api/v1/transaction/success',
-        {trans_id: transId},
+        {
+          sale_id: parseInt(itemId, 10),
+        },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -1153,39 +1287,65 @@ const Chat = ({route, navigation}) => {
         },
       );
 
-      console.log('API 응답:', response.data);
+      logMessage('거래 완료 API 응답', {
+        상태코드: response.status,
+        응답데이터: response.data,
+      });
 
-      // 응답 처리 (0이면 거래 완료 가능 상태)
-      if (response.data === 0) {
-        setIsTradeComplete(true);
-        // 필요하다면 AsyncStorage에 상태 저장
-        await AsyncStorage.setItem(`trade_complete_${transId}`, 'true');
-      } else if (response.data === -1) {
-        Alert.alert(
-          '알림',
-          '아직 거래 완료를 할 수 없습니다. 상대방의 도착을 기다려주세요.',
-        );
+      console.log('거래 완료 응답:', response.data);
+
+      // 응답 값에 따른 처리
+      if (response.status === 200) {
+        if (response.data === -1) {
+          // 응답 값이 -1인 경우: 판매중인 상품을 찾을 수 없음
+          Alert.alert('오류', '판매중인 상품을 찾을 수 없습니다.');
+        } else if (response.data === 0 || response.data === '0') {
+          // 응답 값이 0인 경우: 성공적으로 처리됨
+          // 거래 완료 상태 저장
+          await AsyncStorage.setItem(`complete_${itemId}`, 'true');
+          setIsTradeComplete(true);
+
+          // 거래 완료 메시지 전송
+          const completeMessage = `[거래완료] 거래가 성공적으로 완료되었습니다.`;
+
+          const messageData = {
+            type: 'chat',
+            content: completeMessage,
+            chat_id: parseInt(actualChatId, 10),
+            sender_id: parseInt(realUserId, 10),
+            timestamp: new Date().toISOString(),
+          };
+
+          // 메시지 추가
+          const newMessage = {
+            id: Date.now().toString(),
+            text: completeMessage,
+            sender: realUserId,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, newMessage]);
+
+          // 소켓으로 메시지 전송
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(messageData));
+          }
+
+          Alert.alert('거래 완료', '거래가 성공적으로 완료되었습니다!', [
+            {text: '확인', onPress: () => navigation.goBack()},
+          ]);
+        } else {
+          // 그 외 응답 값: 일반적인 오류 메시지
+          Alert.alert('오류', '거래 완료 처리에 실패했습니다.');
+        }
       } else {
-        Alert.alert('오류', '알 수 없는 응답입니다. 나중에 다시 시도하세요.');
+        Alert.alert('오류', '서버 응답이 올바르지 않습니다.');
       }
-    } catch (error) {
-      console.error('거래 상태 확인 오류:', error);
-      Alert.alert('오류', '서버와 통신 중 문제가 발생했습니다.');
-    } finally {
-      setIsTradeButtonLoading(false);
-    }
-  };
-
-  // 거래 완료 함수 추가
-  const completeTransaction = async () => {
-    try {
-      // 여기에 거래 완료 처리 로직 구현
-      // 예: API 호출, 상태 업데이트 등
-      Alert.alert('성공', '거래가 성공적으로 완료되었습니다.');
-      // 필요하다면 화면 이동이나 후속 처리
     } catch (error) {
       console.error('거래 완료 오류:', error);
       Alert.alert('오류', '거래 완료 처리 중 문제가 발생했습니다.');
+    } finally {
+      setIsTradeButtonLoading(false);
     }
   };
 
@@ -1234,15 +1394,11 @@ const Chat = ({route, navigation}) => {
             </ProductLeftFrame>
             <ProductLeftFrame>
               {isTradeButtonLoading ? (
-                <TradeButton disabled>
-                  <ActivityIndicator size="small" color="#fff" />
-                </TradeButton>
-              ) : isTradeComplete ? (
-                <TradeButton
-                  onPress={completeTransaction}
-                  style={{backgroundColor: '#4CAF50'}}>
-                  <Text style={{color: 'white'}}>거래완료하기</Text>
-                </TradeButton>
+                <ActivityIndicator size="small" color="#4CAF50" />
+              ) : isArrived ? (
+                <CompleteTradeButton onPress={completeTransaction}>
+                  <CompleteButtonText>거래 완료하기</CompleteButtonText>
+                </CompleteTradeButton>
               ) : (
                 <TradeButton onPress={openTradeModal}>
                   <Text>거래하기</Text>
@@ -1261,7 +1417,9 @@ const Chat = ({route, navigation}) => {
                 ref={flatListRef}
                 data={messages}
                 renderItem={renderMessage}
-                keyExtractor={item => item.id.toString()}
+                keyExtractor={item => {
+                  return `${item.id}_${item.timestamp.getTime()}`;
+                }}
                 contentContainerStyle={{padding: 10}}
                 onContentSizeChange={() =>
                   flatListRef.current?.scrollToEnd({animated: true})

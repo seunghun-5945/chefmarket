@@ -17,6 +17,7 @@ import Geolocation from 'react-native-geolocation-service';
 import IngredientBrowseModal from '../components/IngredientBrowseModal';
 import {Text} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
 
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
@@ -135,6 +136,8 @@ const RegistProduct = () => {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [availableAmount, setAvailableAmount] = useState(0); // 사용자가 보유한 총 수량
   const [amount, setAmount] = useState(''); // 판매하고자 하는 수량
+
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -489,6 +492,7 @@ const RegistProduct = () => {
       );
 
       alert('게시글이 성공적으로 등록되었습니다.');
+      navigation.navigate('Home');
     } catch (error) {
       console.error('등록 에러:', error);
 
