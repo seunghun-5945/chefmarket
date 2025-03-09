@@ -92,9 +92,18 @@ const TradeProductText = styled.Text`
   font-weight: bold;
 `;
 
+// Sold Out 텍스트용 스타일 추가
+const SoldOutText = styled.Text`
+  color: #ff0000;
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+`;
+
 const Ingredient = ({product}) => {
   const navigation = useNavigation();
   const [address, setAddress] = useState('');
+  const isSoldOut = product.status === 'Sold Out';
 
   useEffect(() => {
     const getAddress = async () => {
@@ -133,37 +142,56 @@ const Ingredient = ({product}) => {
   }, [product.location]);
 
   return (
-    <IngredientFrame
-      onPress={() =>
-        navigation.navigate('DetailProduct', {
-          productData: product,
-        })
-      }>
-      <ImageArea>
-        <Image
-          source={{uri: product.images[0]}}
-          style={{width: '100%', height: '100%', borderRadius: 10}}
-          resizeMode="cover"
-        />
-      </ImageArea>
-      <ExplainArea>
-        <TitleText>{product.title}</TitleText>
-        <EtcText>{address && `${address}`} </EtcText>
-        <EtcText>
-          {product.expiry_date &&
-            `유통기한: ${product.expiry_date.split('T')[0]}`}
-        </EtcText>
-        <TradeProductText>{product.value}원</TradeProductText>
-      </ExplainArea>
-      <ButtonArea>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert('신고하기', '해당 게시물을 신고하시겠습니까?')
-          }>
-          <Icon name="ellipsis-vertical" size={20} />
-        </TouchableOpacity>
-      </ButtonArea>
-    </IngredientFrame>
+    <View style={{position: 'relative'}}>
+      <IngredientFrame
+        onPress={() =>
+          navigation.navigate('DetailProduct', {
+            productData: product,
+          })
+        }>
+        <ImageArea>
+          <Image
+            source={{uri: product.images[0]}}
+            style={{width: '100%', height: '100%', borderRadius: 10}}
+            resizeMode="cover"
+          />
+        </ImageArea>
+        <ExplainArea>
+          <TitleText>{product.title}</TitleText>
+          <EtcText>{address && `${address}`} </EtcText>
+          <EtcText>
+            {product.expiry_date &&
+              `유통기한: ${product.expiry_date.split('T')[0]}`}
+          </EtcText>
+          <TradeProductText>{product.value}원</TradeProductText>
+        </ExplainArea>
+        <ButtonArea>
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert('신고하기', '해당 게시물을 신고하시겠습니까?')
+            }>
+            <Icon name="ellipsis-vertical" size={20} />
+          </TouchableOpacity>
+        </ButtonArea>
+      </IngredientFrame>
+
+      {isSoldOut && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(128, 128, 128, 0.3)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 10,
+          }}>
+          <SoldOutText>거래 완료</SoldOutText>
+        </View>
+      )}
+    </View>
   );
 };
 

@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {View, TouchableOpacity} from 'react-native';
+import {View, TouchableOpacity, Platform} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -11,6 +11,8 @@ import Home from './screens/Home';
 import FoodMap from './screens/FoodMap';
 import Profile from './screens/Profile';
 import Recipe from './screens/Recipe';
+import RecipeMain from './screens/RecipeMain';
+import DetailRecipe from './screens/DetailRecipe';
 import Trade from './screens/Trade';
 import TakePhoto from './screens/TakePhoto';
 import ChatRoom from './screens/ChatRoom';
@@ -49,12 +51,15 @@ const HomeStack = () => {
       screenOptions={{
         tabBarActiveTintColor: '#D9534F',
         tabBarInactiveTintColor: 'gray',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          marginTop: Platform.OS === 'android' ? 3 : 2, // Android에서 아이콘과 텍스트 간격 증가
+        },
         tabBarStyle: {
           backgroundColor: 'white',
-        },
-        tabBarLabelStyle: {
-          marginTop: 8, // 아이콘과 텍스트 사이 간격 조절
-          fontSize: 12, // 텍스트 크기도 선택적으로 조절 가능
+          height: Platform.OS === 'android' ? 70 : 80, // Android에서는 높이 증가, iOS는 기본값 유지
+          paddingBottom: Platform.OS === 'android' ? 10 : 20,
+          paddingTop: Platform.OS === 'android' ? 10 : 10,
         },
         ...commonHeaderOptions,
       }}>
@@ -80,7 +85,7 @@ const HomeStack = () => {
       />
       <Tab.Screen
         name="레시피"
-        component={Recipe}
+        component={RecipeMain}
         options={{
           ...commonHeaderOptions,
           tabBarIcon: ({color, size}) => (
@@ -196,6 +201,20 @@ const App = () => {
         <Stack.Screen
           name="MyIngredient"
           component={MyIngredient}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="RecipeMain"
+          component={RecipeMain}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="DetailRecipe"
+          component={DetailRecipe}
           options={{
             headerLeft: () => null,
           }}
