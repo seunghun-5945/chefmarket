@@ -340,18 +340,17 @@ const ChatListBox = ({
           <ExplainFrame>
             <NickNameFrame>
               <NickName>{otherUser.name || '사용자'}</NickName>
-              {/* Date -> DateText로 변경 - 이름 충돌 해결 */}
               <DateText>{lastMessageDate}</DateText>
             </NickNameFrame>
             <LastChatFrame>
               <LastChat>{lastMessage}</LastChat>
               <ProductInfo>
-                <ProductThumbnail
+                {/* <ProductThumbnail
                   source={{uri: 'https://via.placeholder.com/30'}}
                 />
                 <ProductTitle>
                   {item.item.title || '상품명 없음'}({item.item.value || 0}원)
-                </ProductTitle>
+                </ProductTitle> */}
               </ProductInfo>
             </LastChatFrame>
           </ExplainFrame>

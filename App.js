@@ -22,6 +22,8 @@ import GroupPurchases from './screens/GroupPurchases';
 import DetailProduct from './screens/DetailProduct';
 import UploadIngredient from './screens/UploadIngredient';
 import MyIngredient from './screens/MyIngredient';
+import RegistRecipes from './screens/RegistRecipes';
+import SearchRecipes from './screens/SearchRecipes';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -33,7 +35,7 @@ const commonHeaderOptions = {
   headerTitleStyle: {
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: 'Niconne',
+    fontFamily: Platform.OS === 'ios' ? 'Niconne' : 'cursive', // 안드로이드용 대체 폰트
   },
   headerStyle: {
     backgroundColor: '#D9534F', // 원하는 배경색 코드
@@ -215,6 +217,20 @@ const App = () => {
         <Stack.Screen
           name="DetailRecipe"
           component={DetailRecipe}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="RegistRecipes"
+          component={RegistRecipes}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="SearchRecipes"
+          component={SearchRecipes}
           options={{
             headerLeft: () => null,
           }}

@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -15,18 +16,40 @@ import Icon3 from 'react-native-vector-icons/Fontisto';
 import {Text} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// soldOut 이미지 임포트 방식 수정
+// 로컬 이미지는 require로 불러와야 합니다
+const soldOutImage = require('../assets/images/soldOut.png');
+
 const Container = styled.View`
   flex: 1;
   background-color: white;
 `;
 
-const FilterFrame = styled.View`
+const SearchBar = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
+`;
+
+const SearchInput = styled.TextInput`
   flex: 1;
+  height: 36px;
+  background-color: #f5f5f5;
+  border-radius: 18px;
+  padding: 0 16px;
+  margin-right: 10px;
+`;
+
+const FilterFrame = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-around;
   border-bottom-width: 1px;
   border-bottom-color: #eee;
+  padding: 10px 0;
 `;
 
 const FilterButton = styled.TouchableOpacity`
@@ -34,9 +57,9 @@ const FilterButton = styled.TouchableOpacity`
   height: 50px;
   align-items: center;
   justify-content: center;
-  padding: 15px;
+  padding: 10px;
   border: 1px solid #eee;
-  border-radius: 50px;
+  border-radius: 20px;
 
   /* 입체감을 위한 스타일 추가 */
   background-color: #ffffff;
@@ -45,6 +68,10 @@ const FilterButton = styled.TouchableOpacity`
   shadow-offset: 0px 2px;
   shadow-opacity: 0.25;
   shadow-radius: 3.84px;
+`;
+
+const FilterButtonText = styled.Text`
+  font-size: 12px;
 `;
 
 const IngredientContainer = styled.ScrollView`
@@ -92,12 +119,33 @@ const TradeProductText = styled.Text`
   font-weight: bold;
 `;
 
-// Sold Out 텍스트용 스타일 추가
+const PriceContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const SoldOutTag = styled.View`
+  background-color: #ff5a5a;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 8px;
+`;
+
 const SoldOutText = styled.Text`
-  color: #ff0000;
-  font-size: 28px;
+  color: white;
+  font-size: 14px;
   font-weight: bold;
-  text-align: center;
+`;
+
+const NoResultsContainer = styled.View`
+  padding: 20px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const NoResultsText = styled.Text`
+  font-size: 16px;
+  color: #888;
 `;
 
 const Ingredient = ({product}) => {
@@ -163,7 +211,14 @@ const Ingredient = ({product}) => {
             {product.expiry_date &&
               `유통기한: ${product.expiry_date.split('T')[0]}`}
           </EtcText>
-          <TradeProductText>{product.value}원</TradeProductText>
+          <PriceContainer>
+            <TradeProductText>{product.value}원</TradeProductText>
+            {isSoldOut && (
+              <SoldOutTag>
+                <SoldOutText>판매완료</SoldOutText>
+              </SoldOutTag>
+            )}
+          </PriceContainer>
         </ExplainArea>
         <ButtonArea>
           <TouchableOpacity
@@ -183,13 +238,12 @@ const Ingredient = ({product}) => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(128, 128, 128, 0.3)',
+            backgroundColor: 'rgba(128, 128, 128, 0.3)', // 반투명 회색 오버레이
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 10,
-          }}>
-          <SoldOutText>거래 완료</SoldOutText>
-        </View>
+          }}
+        />
       )}
     </View>
   );
@@ -197,29 +251,98 @@ const Ingredient = ({product}) => {
 
 const Trade = () => {
   const [product, setProduct] = useState([]);
+  const [filteredProduct, setFilteredProduct] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [permissions, setPermissions] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const navigation = useNavigation();
+
+  // 권한 확인용 함수
+  const handleGroupPurchasePress = () => {
+    if (permissions) {
+      navigation.navigate('GroupPurchases');
+    } else {
+      Alert.alert('권한 부족', '공동구매 호스팅을 위한 권한이 없습니다.', [
+        {text: '확인', style: 'default'},
+      ]);
+    }
+  };
+
+  // 검색 기능 구현
+  const handleSearch = text => {
+    setSearchText(text);
+    if (text) {
+      const filtered = product.filter(item =>
+        item.title.toLowerCase().includes(text.toLowerCase()),
+      );
+      setFilteredProduct(filtered);
+    } else {
+      setFilteredProduct(product);
+    }
+  };
+
+  // 카테고리 필터링 기능
+  const handleCategoryFilter = category => {
+    if (selectedCategory === category) {
+      // 이미 선택된 카테고리를 다시 클릭하면 필터 해제
+      setSelectedCategory(null);
+      setFilteredProduct(product);
+    } else {
+      setSelectedCategory(category);
+      // 실제 API에서는 카테고리 필드에 맞게 필터링 로직 수정 필요
+      const filtered = product.filter(item => {
+        // 여기서는 제목에 카테고리 키워드가 포함되어 있는지로 간단히 구현
+        // 실제로는 item.category 등의 필드와 비교해야 함
+        return item.title.includes(category);
+      });
+      setFilteredProduct(filtered);
+    }
+  };
+
+  // 권한 정보 가져오기
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const response = await axios.get(
+          'http://3.34.59.23/api/v1/permissions/check',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log(response.data.permissions.can_host_bulk_purchase);
+        setPermissions(response.data.permissions.can_host_bulk_purchase);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={{flexDirection: 'row'}}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('GroupPurchases')}
+            onPress={handleGroupPurchasePress}
             style={{marginRight: 15}}>
-            <Icon3 name="shopping-basket" size={24} color="black" />
+            <Icon3 name="shopping-basket" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             // 빈 상품 데이터와 함께 이동하거나, 새로운 상품 등록 화면으로 이동
             onPress={() => navigation.navigate('RegistProduct')}
             style={{marginRight: 15}}>
-            <Icon2 name="pluscircleo" size={24} color="black" />
+            <Icon2 name="pluscircleo" size={24} color="white" />
           </TouchableOpacity>
         </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, permissions]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -248,6 +371,28 @@ const Trade = () => {
     }
   }, [userLocation]);
 
+  // 데이터가 변경될 때 필터링된 데이터도 업데이트
+  useEffect(() => {
+    // 검색어가 있으면 검색 결과를 유지
+    if (searchText) {
+      const filtered = product.filter(item =>
+        item.title.toLowerCase().includes(searchText.toLowerCase()),
+      );
+      setFilteredProduct(filtered);
+    }
+    // 카테고리가 선택되어 있으면 카테고리 필터 결과 유지
+    else if (selectedCategory) {
+      const filtered = product.filter(item =>
+        item.title.includes(selectedCategory),
+      );
+      setFilteredProduct(filtered);
+    }
+    // 둘 다 없으면 전체 데이터 표시
+    else {
+      setFilteredProduct(product);
+    }
+  }, [product, searchText, selectedCategory]);
+
   const fetchSalesByLocation = async () => {
     if (!userLocation) return;
 
@@ -262,6 +407,7 @@ const Trade = () => {
         },
       );
       setProduct(response.data);
+      setFilteredProduct(response.data);
       console.log(response.data);
     } catch (error) {
       console.log('에러발생:', error);
@@ -277,26 +423,60 @@ const Trade = () => {
     }
   }, [userLocation]);
 
+  // 카테고리 정의
+  const categories = [
+    {icon: '🥩', name: '육류', value: '육류'},
+    {icon: '🥦', name: '채소', value: '채소'},
+    {icon: '🍎', name: '과일', value: '과일'},
+    {icon: '🍺', name: '주류', value: '주류'},
+    {icon: '🍹', name: '음료', value: '음료'},
+  ];
+
   return (
     <Container>
+      <SearchBar>
+        <SearchInput
+          placeholder="🔍 검색어를 입력하세요..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={handleSearch}
+        />
+        {searchText ? (
+          <TouchableOpacity onPress={() => handleSearch('')}>
+            <Icon name="close-circle" size={20} color="#999" />
+          </TouchableOpacity>
+        ) : null}
+      </SearchBar>
+
       <FilterFrame>
-        <FilterButton>
-          <Text>🥕농산물</Text>
-        </FilterButton>
-        <FilterButton>
-          <Text>🐟수산물</Text>
-        </FilterButton>
-        <FilterButton>
-          <Text>🐂축산물</Text>
-        </FilterButton>
+        {categories.map((category, index) => (
+          <FilterButton
+            key={index}
+            onPress={() => handleCategoryFilter(category.value)}
+            style={{
+              backgroundColor:
+                selectedCategory === category.value ? '#f0f0f0' : '#ffffff',
+              borderColor:
+                selectedCategory === category.value ? '#999' : '#eee',
+            }}>
+            <FilterButtonText>{category.icon + category.name}</FilterButtonText>
+          </FilterButton>
+        ))}
       </FilterFrame>
+
       <IngredientContainer
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        {product.map(item => (
-          <Ingredient key={item.id} product={item} />
-        ))}
+        {filteredProduct.length > 0 ? (
+          filteredProduct.map(item => (
+            <Ingredient key={item.id} product={item} />
+          ))
+        ) : (
+          <NoResultsContainer>
+            <NoResultsText>검색 결과가 없습니다.</NoResultsText>
+          </NoResultsContainer>
+        )}
       </IngredientContainer>
     </Container>
   );

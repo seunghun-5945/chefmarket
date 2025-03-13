@@ -214,8 +214,75 @@ const Chat = ({route, navigation}) => {
   const [isTradeButtonLoading, setIsTradeButtonLoading] = useState(false);
   const [isArrived, setIsArrived] = useState(false);
   const [showCancelNotification, setShowCancelNotification] = useState(false);
+  const [salesStatus, setSalesStatus] = useState(null);
 
   const flatListRef = useRef();
+
+  useEffect(() => {
+    const checkSalesStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await axios.get('http://3.34.59.23/api/v1/sales', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // itemId와 일치하는 sale 찾기
+        const matchingSale = response.data.find(
+          sale => sale.id === parseInt(itemId, 10),
+        );
+
+        if (matchingSale) {
+          setSalesStatus(matchingSale.status);
+        }
+      } catch (error) {
+        console.error('판매 상태 확인 오류:', error);
+      }
+    };
+
+    checkSalesStatus();
+  }, [itemId]);
+
+  const renderTradeButton = () => {
+    if (isTradeButtonLoading) {
+      return <ActivityIndicator size="small" color="#4CAF50" />;
+    }
+
+    switch (salesStatus) {
+      case 'Sold Out':
+        return (
+          <CompleteTradeButton disabled={true}>
+            <CompleteButtonText>거래 완료</CompleteButtonText>
+          </CompleteTradeButton>
+        );
+      case 'Trading':
+        return isArrived ? (
+          <CompleteTradeButton onPress={completeTransaction}>
+            <CompleteButtonText>거래 완료하기</CompleteButtonText>
+          </CompleteTradeButton>
+        ) : (
+          <TradeButton onPress={openTradeModal}>
+            <Text>거래하기</Text>
+          </TradeButton>
+        );
+      case 'Available':
+        return (
+          <TradeButton onPress={openTradeModal}>
+            <Text>거래하기</Text>
+          </TradeButton>
+        );
+      default:
+        return (
+          <TradeButton onPress={openTradeModal}>
+            <Text>거래하기</Text>
+          </TradeButton>
+        );
+    }
+  };
 
   // 실제 사용자 ID 가져오기
   useEffect(() => {
@@ -1392,19 +1459,7 @@ const Chat = ({route, navigation}) => {
                 <ProductPrice>{productData.value}원</ProductPrice>
               </ProductInfo>
             </ProductLeftFrame>
-            <ProductLeftFrame>
-              {isTradeButtonLoading ? (
-                <ActivityIndicator size="small" color="#4CAF50" />
-              ) : isArrived ? (
-                <CompleteTradeButton onPress={completeTransaction}>
-                  <CompleteButtonText>거래 완료하기</CompleteButtonText>
-                </CompleteTradeButton>
-              ) : (
-                <TradeButton onPress={openTradeModal}>
-                  <Text>거래하기</Text>
-                </TradeButton>
-              )}
-            </ProductLeftFrame>
+            <ProductLeftFrame>{renderTradeButton()}</ProductLeftFrame>
           </ProductInfoContainer>
 
           <ChatContainer>

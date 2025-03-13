@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {View, TouchableOpacity, RefreshControl} from 'react-native';
 import {Text} from 'react-native';
 import styled from 'styled-components/native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {useLayoutEffect} from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ChatListBox from '../components/ChatListBox';
@@ -58,21 +58,38 @@ const ChatRoom = () => {
           <TouchableOpacity
             onPress={() => navigation.navigate('MapModal')}
             style={{marginHorizontal: 10}}>
-            <Icon name="search" size={24} color="black" />
+            <Icon name="search" size={24} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.navigate('ProfileModal')}
             style={{marginHorizontal: 10}}>
-            <Icon name="notifications-outline" size={24} color="black" />
+            <Icon name="notifications-outline" size={24} color="white" />
           </TouchableOpacity>
         </View>
       ),
     });
   }, [navigation]);
 
+  // Check login status on initial load
   useEffect(() => {
     checkLoginStatus();
   }, []);
+
+  // Refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // This will run when the screen is focused
+      checkLoginStatus();
+      if (isLoggedIn) {
+        // Trigger refresh of chat list when screen is focused
+        handleRefresh();
+      }
+
+      return () => {
+        // This will run when the screen loses focus (optional cleanup)
+      };
+    }, [isLoggedIn]),
+  );
 
   const checkLoginStatus = async () => {
     try {
@@ -84,10 +101,21 @@ const ChatRoom = () => {
     }
   };
 
-  const onRefresh = React.useCallback(async () => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Add a slight delay to show the refresh indicator
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await checkLoginStatus();
-    setRefreshing(false);
+    // Add any other refresh logic here
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
   }, []);
 
   const handleLogin = () => {
@@ -114,7 +142,11 @@ const ChatRoom = () => {
     <Container>
       <HeaderText>채팅</HeaderText>
       <View style={{flex: 1}}>
-        <ChatListBox refreshControl={refreshing} onRefresh={onRefresh} />
+        <ChatListBox
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        />
       </View>
     </Container>
   );

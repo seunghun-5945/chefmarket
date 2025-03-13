@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useLayoutEffect, useCallback} from 'react';
 import {
   Text,
   View,
@@ -8,12 +8,17 @@ import {
   ScrollView,
   Image,
   Platform,
+  TouchableWithoutFeedback,
+  Alert,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Swiper from 'react-native-web-swiper';
 import {useNavigation} from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import Icon2 from 'react-native-vector-icons/AntDesign';
+import Icon3 from 'react-native-vector-icons/Fontisto';
 
 const Container = styled.View`
   flex: 1;
@@ -185,18 +190,11 @@ const ErrorText = styled.Text`
   margin: 20px;
 `;
 
-// 카테고리 데이터
 const categories = [
-  {id: 1, name: '제철요리', icon: '🥬'},
-  {id: 2, name: '메인요리', icon: '🍲'},
-  {id: 3, name: '밑반찬', icon: '🍱'},
-  {id: 4, name: '국/탕', icon: '🥘'},
-  {id: 5, name: '디저트', icon: '🍰'},
-  {id: 6, name: '음료', icon: '🥤'},
-  {id: 7, name: '원팬요리', icon: '🍳'},
-  {id: 8, name: '간식', icon: '🥨'},
-  {id: 9, name: '야식', icon: '🍜'},
-  {id: 10, name: '기타', icon: '📝'},
+  {id: 1, name: '국&찌개', icon: '🥘'},
+  {id: 2, name: '반찬', icon: '🍲'},
+  {id: 3, name: '일품', icon: '🍱'},
+  {id: 4, name: '후식', icon: '🍰'},
 ];
 
 const RecipeMain = () => {
@@ -204,10 +202,179 @@ const RecipeMain = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [permissions, setPermissions] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [allRecipes, setAllRecipes] = useState([]);
+  const [categorizedRecipes, setCategorizedRecipes] = useState({});
+
   const navigation = useNavigation();
 
+  // 레시피 등록 버튼 클릭 핸들러
+  const handleRegistPress = useCallback(() => {
+    if (permissions) {
+      navigation.navigate('RegistRecipes');
+    } else {
+      Alert.alert('권한 부족', '레시피 등록을 위한 권한이 없습니다.', [
+        {text: '확인', style: 'default'},
+      ]);
+    }
+  }, [permissions, navigation]);
+
+  // 레시피 선택 핸들러
+  const handleRecipeSelect = useCallback(
+    recipeItem => {
+      navigation.navigate('DetailRecipe', {recipeData: recipeItem});
+    },
+    [navigation],
+  );
+
+  // 검색 함수
+  const SearchRecipe = useCallback(
+    async searchText => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const response = await axios.get(
+          'http://3.34.59.23/api/v1/recipes/search',
+          {
+            params: {
+              query: searchText,
+              threshold: 0.4,
+              limit: 10,
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log(response.data);
+        navigation.navigate('SearchRecipes', {
+          searchResults: response.data,
+          searchQuery: searchText,
+        });
+        return response.data;
+      } catch (error) {
+        console.log(error);
+        Alert.alert('검색 오류', '검색 중 오류가 발생했습니다.');
+        return [];
+      }
+    },
+    [navigation],
+  );
+
+  // 레시피를 카테고리별로 분류하는 함수
+  const categorizeRecipes = useCallback(recipes => {
+    const categorized = {};
+
+    if (Array.isArray(recipes)) {
+      recipes.forEach(recipe => {
+        const category = recipe.category || '기타';
+
+        if (!categorized[category]) {
+          categorized[category] = [];
+        }
+
+        categorized[category].push(recipe);
+      });
+    } else if (typeof recipes === 'object') {
+      Object.keys(recipes).forEach(category => {
+        if (Array.isArray(recipes[category])) {
+          categorized[category] = recipes[category];
+        }
+      });
+    }
+
+    setCategorizedRecipes(categorized);
+  }, []);
+
+  // 모든 레시피 데이터 로드 함수
+  const fetchAllRecipes = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('accessToken');
+
+      const response = await axios.get('http://3.34.59.23/api/v1/recipes/', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      setAllRecipes(response.data);
+      categorizeRecipes(response.data);
+      setLoading(false);
+      return response.data;
+    } catch (error) {
+      console.log('레시피 불러오기 오류:', error);
+      setLoading(false);
+      return [];
+    }
+  }, [categorizeRecipes]);
+
+  // 카테고리 버튼 클릭 핸들러
+  const handleCategoryPress = useCallback(
+    categoryName => {
+      if (
+        categorizedRecipes[categoryName] &&
+        categorizedRecipes[categoryName].length > 0
+      ) {
+        navigation.navigate('SearchRecipes', {
+          searchResults: categorizedRecipes[categoryName],
+          searchQuery: categoryName,
+        });
+      } else {
+        Alert.alert('알림', `${categoryName} 카테고리의 레시피가 없습니다.`);
+      }
+    },
+    [categorizedRecipes, navigation],
+  );
+
+  // 권한 체크
   useEffect(() => {
-    const fetchData = async () => {
+    const checkPermissions = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const response = await axios.get(
+          'http://3.34.59.23/api/v1/permissions/check',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log(response.data.permissions.can_create_recipe_class);
+        setPermissions(response.data.permissions.can_create_recipe_class);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    checkPermissions();
+  }, []);
+
+  // 헤더 설정
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{flexDirection: 'row'}}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Favorites')}
+            style={{marginRight: 15}}>
+            <Icon2 name="star" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleRegistPress}
+            style={{marginRight: 15}}>
+            <Icon2 name="pluscircleo" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [navigation, permissions, handleRegistPress]);
+
+  // 레시피 추천 데이터 가져오기
+  useEffect(() => {
+    const fetchRecommendations = async () => {
       try {
         setLoading(true);
         const token = await AsyncStorage.getItem('accessToken');
@@ -216,7 +383,7 @@ const RecipeMain = () => {
         // 토큰이 없는 경우 더미 데이터 사용
         if (!token) {
           console.log('토큰이 없어 더미 데이터를 사용합니다.');
-          setRecipesData(dummyData);
+          setRecipesData([]); // 더미 데이터가 정의되지 않았으므로 빈 배열 사용
           setError(null);
           setLoading(false);
           return;
@@ -243,17 +410,13 @@ const RecipeMain = () => {
       }
     };
 
-    fetchData();
+    fetchRecommendations();
   }, []);
 
-  // 레시피 선택 핸들러 추가
-  const handleRecipeSelect = recipeItem => {
-    // recipeItem에서 실제 recipe 객체 추출
-    const recipe = recipeItem.recipe;
-
-    // DetailRecipe 화면으로 네비게이션하며 전체 레시피 데이터 전달
-    navigation.navigate('DetailRecipe', {recipeData: recipeItem});
-  };
+  // 모든 레시피 데이터 로드
+  useEffect(() => {
+    fetchAllRecipes();
+  }, [fetchAllRecipes]);
 
   if (loading) {
     return (
@@ -267,11 +430,16 @@ const RecipeMain = () => {
     <Container>
       <SearchBar>
         <SearchInput
+          onChangeText={text => setSearchText(text)}
+          onSubmitEditing={() => (searchText ? SearchRecipe(searchText) : null)}
+          value={searchText}
           placeholder="🔍 검색해 보세요..."
           placeholderTextColor="#999"
+          returnKeyType="search"
         />
-        <IconButton>
-          <Text style={{fontSize: 20}}>🛒</Text>
+        <IconButton
+          onPress={() => (searchText ? SearchRecipe(searchText) : null)}>
+          <Text style={{fontSize: 20}}>🔍</Text>
         </IconButton>
       </SearchBar>
 
@@ -283,32 +451,34 @@ const RecipeMain = () => {
 
         <MainSection>
           {recipesData && recipesData.length > 0 ? (
-            <TouchableOpacity
-              onPress={() => handleRecipeSelect(recipesData[activeIndex])}>
-              <RecipeCard>
-                <Swiper
-                  from={0}
-                  loop
-                  timeout={3}
-                  springConfig={{speed: 11}}
-                  minDistanceForAction={0.1}
-                  controlsEnabled={false}
-                  onIndexChanged={index => setActiveIndex(index)}
-                  containerStyle={{height: 220}}>
-                  {recipesData.map((recipeItem, index) => {
-                    const recipe = recipeItem.recipe;
-                    if (!recipe) return null;
+            <RecipeCard>
+              <Swiper
+                from={0}
+                loop
+                timeout={3}
+                springConfig={{speed: 11}}
+                minDistanceForAction={0.1}
+                controlsEnabled={false}
+                gestureEnabled={true}
+                onIndexChanged={index => setActiveIndex(index)}
+                containerStyle={{height: 220}}>
+                {recipesData.map((recipeItem, index) => {
+                  const recipe = recipeItem.recipe;
+                  if (!recipe) return null;
 
-                    // 대표 이미지 가져오기
-                    const mainImage =
-                      recipe.image_large ||
-                      (Array.isArray(recipe.cooking_img) &&
-                      recipe.cooking_img.length > 0
-                        ? recipe.cooking_img[0]
-                        : 'https://via.placeholder.com/400');
+                  // 대표 이미지 가져오기
+                  const mainImage =
+                    recipe.image_large ||
+                    (Array.isArray(recipe.cooking_img) &&
+                    recipe.cooking_img.length > 0
+                      ? recipe.cooking_img[0]
+                      : 'https://via.placeholder.com/400');
 
-                    return (
-                      <View key={`recipe-${index}`} style={{height: 280}}>
+                  return (
+                    <TouchableWithoutFeedback
+                      key={`recipe-${index}`}
+                      onPress={() => handleRecipeSelect(recipeItem)}>
+                      <View style={{height: 280}}>
                         <RecipeImage source={{uri: mainImage}} />
                         <RecipeInfoBar>
                           <RecipeTitle>
@@ -322,11 +492,11 @@ const RecipeMain = () => {
                           <InfoText>{recipe.category || '0'}</InfoText>
                         </RecipeInfoBar>
                       </View>
-                    );
-                  })}
-                </Swiper>
-              </RecipeCard>
-            </TouchableOpacity>
+                    </TouchableWithoutFeedback>
+                  );
+                })}
+              </Swiper>
+            </RecipeCard>
           ) : (
             <RecipeCard>
               <View
@@ -357,7 +527,9 @@ const RecipeMain = () => {
 
           <CategoryGrid>
             {categories.map(category => (
-              <CategoryItem key={category.id}>
+              <CategoryItem
+                key={category.id}
+                onPress={() => handleCategoryPress(category.name)}>
                 <CategoryIcon>
                   <Text style={{fontSize: 22}}>{category.icon}</Text>
                 </CategoryIcon>

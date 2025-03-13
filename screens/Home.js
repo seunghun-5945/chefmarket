@@ -10,6 +10,7 @@ import steak from '../assets/testImage/steak.jpg';
 import News from '../components/News';
 import SkeletonNews from '../components/SkeletonNews';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Container = styled.View`
   flex: 1;
@@ -40,6 +41,7 @@ const Home = () => {
   const name = ['김치찌개', '부대찌개', '스테이크'];
   const [newsData, setNewsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [recipesData, setRecipesData] = useState([]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,6 +66,41 @@ const Home = () => {
       ),
     });
   }, [navigation]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        console.log('현재 토큰:', token ? '토큰 있음' : '토큰 없음');
+
+        // 토큰이 없는 경우 더미 데이터 사용
+        if (!token) {
+          console.log('토큰이 없어 더미 데이터를 사용합니다.');
+          return;
+        }
+
+        const response = await axios.get(
+          'http://3.34.59.23/api/v1/users/me/recommendations',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log('API 응답 성공');
+        console.log(response.data);
+        setRecipesData(response.data);
+        setError(null);
+      } catch (error) {
+        console.log('API 에러 발생:', error.response?.status || error.message);
+        setError(error);
+      } finally {
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const fetchNews = async () => {
