@@ -129,6 +129,12 @@ const RequesterProfileImage = styled.View`
   border-radius: 50px;
 `;
 
+const ContentFrame = styled.View`
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 100px;
+`;
+
 const DetailProduct = ({route}) => {
   // route.params에서 productData를 추출
   const product = route.params?.productData;
@@ -136,6 +142,10 @@ const DetailProduct = ({route}) => {
   const [address, setAddress] = useState('');
   const [isOwnProduct, setIsOwnProduct] = useState(false); // 자신의 상품인지 상태 추가
   const navigation = useNavigation();
+
+  useEffect(() => {
+    console.log(product);
+  }, []);
 
   // 컴포넌트 마운트 시 자신의 상품인지 확인
   useEffect(() => {
@@ -355,6 +365,9 @@ const DetailProduct = ({route}) => {
               <Text>유통기한: {product.expiry_date.split('T')[0]}</Text>
             )}
           </RequesterInfoFrame>
+          <ContentFrame>
+            <Text>{product.contents}</Text>
+          </ContentFrame>
         </ScrollContainer>
         <ButtonContainer>
           {isOwnProduct ? (

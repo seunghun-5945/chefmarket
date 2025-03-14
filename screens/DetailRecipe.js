@@ -5,6 +5,7 @@ import styled from 'styled-components/native';
 const Container = styled(ScrollView)`
   flex: 1;
   background-color: white;
+  padding-bottom: 30px;
 `;
 
 const ImageFrame = styled.Image`
@@ -45,18 +46,21 @@ const SectionText = styled.Text`
 
 const Divider = styled.View`
   height: 1px;
+  width: 100%;
   background-color: #e0e0e0;
   margin-vertical: 10px;
 `;
 
 const StepWrapper = styled.View`
   margin-top: 15px;
+  margin-bottom: 15px;
   align-items: center;
 `;
 
 const StepText = styled.Text`
   font-size: 18px;
-  margin-bottom: 5px;
+  font-weight: bold;
+  margin-bottom: 15px;
 `;
 
 const DetailRecipe = ({route}) => {
@@ -74,11 +78,17 @@ const DetailRecipe = ({route}) => {
       ? recipe.cooking_img[0]
       : 'https://via.placeholder.com/400'); // 기본 이미지
 
-  // 조리 과정과 설명을 순서대로 매칭
-  const cookingSteps = (recipe.cooking_img || []).map((img, index) => ({
-    img,
-    instructions: recipe.instructions?.[index] || '설명이 없습니다.', // 설명이 없을 경우 기본값 처리
-  }));
+  // 조리 과정과 설명을 순서대로 매칭하고 숫자 및 온점 제거
+  const cookingSteps = (recipe.cooking_img || []).map((img, index) => {
+    // 숫자와 온점 패턴 제거 (예: "1. ", "2. ", "10. " 등)
+    const instructions = recipe.instructions?.[index] || '설명이 없습니다.';
+    const cleanedInstructions = instructions.replace(/^\d+\.\s*/, '');
+
+    return {
+      img,
+      instructions: cleanedInstructions,
+    };
+  });
 
   return (
     <Container>
@@ -122,10 +132,18 @@ const DetailRecipe = ({route}) => {
               source={{uri: step.img}}
               style={{width: '100%', height: 250, borderRadius: 10}}
             />
-            <Text style={{fontSize: 16, marginTop: 5}}>
+            <Text
+              style={{
+                fontSize: 16,
+                marginTop: 25,
+                marginBottom: 20,
+                paddingHorizontal: 10,
+                textAlign: 'center',
+                lineHeight: 22,
+              }}>
               {step.instructions}
             </Text>
-            <Divider />
+            <Divider style={{marginBottom: 10}} />
           </StepWrapper>
         ))}
       </ContentWrapper>

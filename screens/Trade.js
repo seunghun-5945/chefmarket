@@ -270,17 +270,9 @@ const Trade = () => {
     }
   };
 
-  // 검색 기능 구현
   const handleSearch = text => {
     setSearchText(text);
-    if (text) {
-      const filtered = product.filter(item =>
-        item.title.toLowerCase().includes(text.toLowerCase()),
-      );
-      setFilteredProduct(filtered);
-    } else {
-      setFilteredProduct(product);
-    }
+    // useEffect에서 처리하므로 setTimeout 제거
   };
 
   // 카테고리 필터링 기능
@@ -288,17 +280,10 @@ const Trade = () => {
     if (selectedCategory === category) {
       // 이미 선택된 카테고리를 다시 클릭하면 필터 해제
       setSelectedCategory(null);
-      setFilteredProduct(product);
     } else {
       setSelectedCategory(category);
-      // 실제 API에서는 카테고리 필드에 맞게 필터링 로직 수정 필요
-      const filtered = product.filter(item => {
-        // 여기서는 제목에 카테고리 키워드가 포함되어 있는지로 간단히 구현
-        // 실제로는 item.category 등의 필드와 비교해야 함
-        return item.title.includes(category);
-      });
-      setFilteredProduct(filtered);
     }
+    // useEffect에서 처리하므로 setTimeout 제거
   };
 
   // 권한 정보 가져오기
@@ -382,8 +367,8 @@ const Trade = () => {
     }
     // 카테고리가 선택되어 있으면 카테고리 필터 결과 유지
     else if (selectedCategory) {
-      const filtered = product.filter(item =>
-        item.title.includes(selectedCategory),
+      const filtered = product.filter(
+        item => item.category === selectedCategory,
       );
       setFilteredProduct(filtered);
     }
@@ -406,12 +391,50 @@ const Trade = () => {
           },
         },
       );
-      setProduct(response.data);
-      setFilteredProduct(response.data);
-      console.log(response.data);
+
+      // 각 상품에 카테고리 정보 추가
+      const productsWithCategory = response.data.map(item => {
+        // API 응답에 카테고리가 없으면 title에서 추측
+        if (!item.category) {
+          return {
+            ...item,
+            category: getCategoryFromProduct(item),
+          };
+        }
+        return item;
+      });
+
+      setProduct(productsWithCategory);
+      setFilteredProduct(productsWithCategory);
+      console.log('상품 데이터 로드 완료:', productsWithCategory);
     } catch (error) {
       console.log('에러발생:', error);
     }
+  };
+
+  const getCategoryFromProduct = product => {
+    // API에서 받은 데이터에 category 필드가 있으면 그대로 사용
+    if (product.category) {
+      return product.category;
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = product;
+
+    // 검색어 필터 적용
+    if (searchText) {
+      filtered = filtered.filter(item =>
+        item.title.toLowerCase().includes(searchText.toLowerCase()),
+      );
+    }
+
+    // 카테고리 필터 적용
+    if (selectedCategory) {
+      filtered = filtered.filter(item => item.category === selectedCategory);
+    }
+
+    setFilteredProduct(filtered);
   };
 
   const onRefresh = React.useCallback(async () => {
@@ -429,7 +452,7 @@ const Trade = () => {
     {icon: '🥦', name: '채소', value: '채소'},
     {icon: '🍎', name: '과일', value: '과일'},
     {icon: '🍺', name: '주류', value: '주류'},
-    {icon: '🍹', name: '음료', value: '음료'},
+    {icon: '🍹', name: '기타', value: '기타'},
   ];
 
   return (

@@ -23,7 +23,7 @@ const TakePhoto = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
 
-  const categories = ['육류', '채소', '과일', '주류', '음료', '양념', '기타'];
+  const categories = ['육류', '채소', '과일', '주류', '기타'];
 
   const formatDateTime = (year, month, day, hour, minute) => {
     return `${year}-${month.padStart(2, '0')}-${day.padStart(

@@ -19,6 +19,7 @@ import ChatRoom from './screens/ChatRoom';
 import Chat from './screens/Chat';
 import RegistProduct from './screens/RegistProduct';
 import GroupPurchases from './screens/GroupPurchases';
+import RegistGroupPurchases from './screens/RegistGroupPurchases';
 import DetailProduct from './screens/DetailProduct';
 import UploadIngredient from './screens/UploadIngredient';
 import MyIngredient from './screens/MyIngredient';
@@ -231,6 +232,13 @@ const App = () => {
         <Stack.Screen
           name="SearchRecipes"
           component={SearchRecipes}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="RegistGroupPurchases"
+          component={RegistGroupPurchases}
           options={{
             headerLeft: () => null,
           }}

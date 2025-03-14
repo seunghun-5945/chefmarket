@@ -136,6 +136,7 @@ const RegistProduct = () => {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [availableAmount, setAvailableAmount] = useState(0); // 사용자가 보유한 총 수량
   const [amount, setAmount] = useState(''); // 판매하고자 하는 수량
+  const [category, setCategory] = useState(''); // 카테고리
 
   const navigation = useNavigation();
 
@@ -178,6 +179,7 @@ const RegistProduct = () => {
     setTitle(ingredient.name);
     setExpiryDate(ingredient.expiry_date); // 유통기한 정보 저장
     setAvailableAmount(ingredient.amount || 0); // 선택한 식재료의 보유 수량 설정
+    setCategory(ingredient.category || ''); // 카테고리 정보 저장
     setAmount(''); // 판매 수량 초기화
   };
 
@@ -470,6 +472,7 @@ const RegistProduct = () => {
       formData.append('ingredient_name', ingredientName?.trim() || '');
       formData.append('contents', contents?.trim() || '');
       formData.append('status', 'Available');
+      formData.append('category', category?.trim() || '');
 
       // FormData 내용 확인
       console.log('FormData contents:');
@@ -577,6 +580,16 @@ const RegistProduct = () => {
               placeholder="글 제목을 입력하세요"
               value={title}
               onChangeText={setTitle}
+            />
+
+            <StyledText>카테고리</StyledText>
+            <InputBox
+              placeholder="카테고리는 식재료 선택 시 자동으로 입력됩니다"
+              value={category}
+              editable={false} // 편집 불가능하게 설정
+              style={{
+                backgroundColor: '#f0f0f0', // 읽기 전용 표시를 위한 배경색 변경
+              }}
             />
 
             <StyledText>수량</StyledText>

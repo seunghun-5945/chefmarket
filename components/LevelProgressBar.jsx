@@ -53,30 +53,59 @@ const LevelProgressBar = ({trustScore}) => {
   const calculateProgress = () => {
     if (currentLevelIndex === LEVELS.length - 1) return 1; // 최고 레벨일 경우
 
-    const levelRange = nextLevel.minPoints - currentLevel.minPoints;
+    const levelRange = currentLevel.maxPoints - currentLevel.minPoints + 1;
     const currentProgress = trustScore - currentLevel.minPoints;
     return Math.min(currentProgress / levelRange, 1);
   };
 
-  // 각 등급이 차지하는 비율 계산 (UI 표시용)
-  const calculateSegmentWidth = index => {
-    if (index === currentLevelIndex) {
-      // 현재 등급은 진행 상황에 따라 너비 조정
-      return `${calculateProgress() * 25}%`;
-    } else if (index < currentLevelIndex) {
-      // 이미 완료된 등급은 꽉 채움
-      return '25%';
-    } else {
-      // 미달성 등급은 비어있음
-      return '25%';
-    }
+  // 프로그레스 바 렌더링을 위한 데이터 준비
+  const renderProgressBar = () => {
+    return LEVELS.map((level, index) => {
+      // 이미 완전히 채워진 구간 (이전 레벨)
+      if (index < currentLevelIndex) {
+        return (
+          <LevelSegment
+            key={level.name}
+            color={level.color}
+            completed={true}
+            width="25%"
+          />
+        );
+      }
+
+      // 현재 진행 중인 구간 (현재 레벨)
+      if (index === currentLevelIndex) {
+        return (
+          <LevelSegment
+            key={level.name}
+            color={level.color}
+            completed={true}
+            width={`${calculateProgress() * 25}%`}
+          />
+        );
+      }
+
+      // 아직 도달하지 않은 구간 (미래 레벨)
+      return (
+        <LevelSegment
+          key={level.name}
+          color={level.color}
+          completed={false}
+          width="25%"
+        />
+      );
+    });
   };
 
   return (
     <Container>
       <LevelInfoContainer>
         {LEVELS.map((level, index) => (
-          <LevelInfo key={level.name} active={index <= currentLevelIndex}>
+          <LevelInfo
+            key={level.name}
+            active={
+              index <= currentLevelIndex || trustScore >= level.minPoints
+            }>
             <LevelEmoji>{level.emoji}</LevelEmoji>
             <LevelName active={index === currentLevelIndex}>
               {level.name}
@@ -86,20 +115,7 @@ const LevelProgressBar = ({trustScore}) => {
       </LevelInfoContainer>
 
       <ProgressBarContainer>
-        <ProgressBarWrapper>
-          {LEVELS.map((level, index) => (
-            <LevelSegment
-              key={level.name}
-              color={level.color}
-              completed={
-                index < currentLevelIndex ||
-                (index === currentLevelIndex && calculateProgress() > 0)
-              }
-              width={calculateSegmentWidth(index)}
-              partial={index === currentLevelIndex}
-            />
-          ))}
-        </ProgressBarWrapper>
+        <ProgressBarWrapper>{renderProgressBar()}</ProgressBarWrapper>
         <PointsText>
           {trustScore} / {nextLevel ? nextLevel.minPoints : '최고 레벨'}
         </PointsText>
