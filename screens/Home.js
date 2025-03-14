@@ -44,7 +44,6 @@ const StyledText = styled.Text`
 const RecipeCard = styled.View`
   width: 100%;
   height: 220px;
-  border-radius: 10px;
   margin-bottom: 12px;
   background-color: white;
   elevation: 3;

@@ -25,6 +25,7 @@ import UploadIngredient from './screens/UploadIngredient';
 import MyIngredient from './screens/MyIngredient';
 import RegistRecipes from './screens/RegistRecipes';
 import SearchRecipes from './screens/SearchRecipes';
+import SplashScreen from 'react-native-splash-screen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -125,6 +126,12 @@ const HomeStack = () => {
 };
 
 const App = () => {
+  useEffect(() => {
+    setTimeout(() => {
+      SplashScreen.hide();
+    }, 1000); //스플래시 활성화 시간
+  });
+
   return (
     <NavigationContainer>
       <Stack.Navigator
