@@ -45,7 +45,7 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = chefmarket/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97420460B52D526983626A10 /* libPods-chefmarket-chefmarketTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-chefmarket-chefmarketTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A53C5BB48846C4D339BFA9DF /* Pods-chefmarket.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket.release.xcconfig"; path = "Target Support Files/Pods-chefmarket/Pods-chefmarket.release.xcconfig"; sourceTree = "<group>"; };
-		B871A668D03049E49933A837 /* Niconne-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Niconne-Regular.ttf"; path = "../android/app/src/main/assets/fonts/Niconne-Regular.ttf"; sourceTree = "<group>"; };
+		B871A668D03049E49933A837 /* Niconne-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Niconne-Regular.ttf"; path = "../android/app/src/main/assets/fonts/Niconne-Regular.ttf"; sourceTree = "<group>"; };
 		C824338D8BE95AA8F794E77D /* Pods-chefmarket-chefmarketTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-chefmarket-chefmarketTests.release.xcconfig"; path = "Target Support Files/Pods-chefmarket-chefmarketTests/Pods-chefmarket-chefmarketTests.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -149,7 +149,6 @@
 				B871A668D03049E49933A837 /* Niconne-Regular.ttf */,
 			);
 			name = Resources;
-			path = "";
 			sourceTree = "<group>";
 		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
@@ -486,6 +485,7 @@
 				DEVELOPMENT_TEAM = 2NWVH8LT53;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = chefmarket/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "셰프의 마켓";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -514,6 +514,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2NWVH8LT53;
 				INFOPLIST_FILE = chefmarket/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "셰프의 마켓";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

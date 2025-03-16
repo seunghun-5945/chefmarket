@@ -146,6 +146,7 @@ const DetailRecipe = ({route}) => {
             <Divider style={{marginBottom: 10}} />
           </StepWrapper>
         ))}
+        <Text>맛있게 드셨다면? 레시피를 평가해 주세요</Text>
       </ContentWrapper>
     </Container>
   );

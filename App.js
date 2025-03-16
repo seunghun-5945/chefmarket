@@ -23,8 +23,11 @@ import RegistGroupPurchases from './screens/RegistGroupPurchases';
 import DetailProduct from './screens/DetailProduct';
 import UploadIngredient from './screens/UploadIngredient';
 import MyIngredient from './screens/MyIngredient';
+import MyRecipes from './screens/MyRecipes';
+import MySales from './screens/Mysales';
 import RegistRecipes from './screens/RegistRecipes';
 import SearchRecipes from './screens/SearchRecipes';
+import RatingRecipes from './screens/RatingRecipes';
 import SplashScreen from 'react-native-splash-screen';
 
 const Stack = createStackNavigator();
@@ -130,7 +133,7 @@ const App = () => {
     setTimeout(() => {
       SplashScreen.hide();
     }, 1000); //스플래시 활성화 시간
-  });
+  }, []);
 
   return (
     <NavigationContainer>
@@ -216,6 +219,20 @@ const App = () => {
           }}
         />
         <Stack.Screen
+          name="MyRecipes"
+          component={MyRecipes}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="MySales"
+          component={MySales}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
           name="RecipeMain"
           component={RecipeMain}
           options={{
@@ -239,6 +256,13 @@ const App = () => {
         <Stack.Screen
           name="SearchRecipes"
           component={SearchRecipes}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="RatingRecipes"
+          component={RatingRecipes}
           options={{
             headerLeft: () => null,
           }}

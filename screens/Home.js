@@ -92,30 +92,6 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={{flexDirection: 'row'}}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Chat')}
-            style={{marginHorizontal: 10, color: 'white'}}>
-            <Icon name="chatbubble-ellipses-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('MapModal')}
-            style={{marginHorizontal: 10}}>
-            <Icon name="search" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('TakePhoto')}
-            style={{marginHorizontal: 10}}>
-            <Icon name="notifications-outline" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation]);
-
   // 뉴스 데이터 가져오기
   useEffect(() => {
     const fetchNews = async () => {

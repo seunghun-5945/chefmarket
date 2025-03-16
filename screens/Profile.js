@@ -196,28 +196,28 @@ const Profile = () => {
       </ImageFrame>
 
       <IconContainer>
-        <IconFrame>
-          <Icon2 name="sell" size={30} color="black" />
+        <IconFrame onPress={() => navigation.navigate('MySales')}>
+          <Icon2 name="sell" size={30} color="#D9534F" />
           <IconText>{'판매\n목록'}</IconText>
         </IconFrame>
         <IconFrame>
-          <Icon name="heart-sharp" size={30} color="red" />
+          <Icon name="heart-sharp" size={30} color="#D9534F" />
           <IconText>{'좋아요한\n레시피'}</IconText>
         </IconFrame>
-        <IconFrame>
-          <Icon3 name="food-variant" size={30} color="gray" />
+        <IconFrame onPress={() => navigation.navigate('MyRecipes')}>
+          <Icon3 name="food-variant" size={30} color="#D9534F" />
           <IconText>{'내가 올린\n레시피'}</IconText>
         </IconFrame>
-        <IconFrame onPress={() => navigation.navigate('MyIngredient')}>
-          <Icon3 name="food-apple" size={30} color="red" />
-          <IconText>{'보관중인\n식재료'}</IconText>
+        <IconFrame onPress={() => navigation.navigate('RatingRecipes')}>
+          <Icon3 name="star" size={30} color="#D9534F" />
+          <IconText>{'평가한\n레시피'}</IconText>
         </IconFrame>
         <IconFrame onPress={() => navigation.navigate('MyIngredient')}>
-          <Icon3 name="food-apple" size={30} color="red" />
+          <Icon3 name="food-apple" size={30} color="#D9534F" />
           <IconText>{'나의\n식재료'}</IconText>
         </IconFrame>
         <IconFrame onPress={() => navigation.navigate('UploadIngredient')}>
-          <Icon5 name="shopping-basket-add" size={30} color="gray" />
+          <Icon5 name="shopping-basket-add" size={30} color="#D9534F" />
           <IconText>{'식재료\n등록'}</IconText>
         </IconFrame>
       </IconContainer>

@@ -68,16 +68,6 @@ const DateDisplayText = styled.Text`
   color: ${props => (props.placeholder ? '#999' : '#000')};
 `;
 
-const LocationInput = styled.TextInput`
-  width: 90%;
-  height: 40px;
-  border-width: 1px;
-  border-color: #ddd;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  padding: 0 10px;
-`;
-
 const ButtonContainer = styled.View`
   flex-direction: row;
   justify-content: space-between;
@@ -266,13 +256,6 @@ const TradeModal = ({visible, onClose, onConfirm, itemTitle, itemLocation}) => {
               onChange={onDateChange}
             />
           )}
-
-          <InputLabel>만남 장소</InputLabel>
-          <LocationInput
-            placeholder="만남 장소를 입력해주세요"
-            value={location}
-            onChangeText={setLocation}
-          />
 
           <ButtonContainer>
             <CancelButton onPress={handleCancel}>
