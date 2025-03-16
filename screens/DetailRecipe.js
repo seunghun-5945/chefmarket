@@ -1,6 +1,7 @@
 import {useEffect} from 'react';
 import {Text, Image, View, ScrollView} from 'react-native';
 import styled from 'styled-components/native';
+import Icon from 'react-native-vector-icons/AntDesign';
 
 const Container = styled(ScrollView)`
   flex: 1;
@@ -63,6 +64,12 @@ const StepText = styled.Text`
   margin-bottom: 15px;
 `;
 
+const RatingFrame = styled.View`
+  width: 100%;
+  height: 150px;
+  align-items: center;
+`;
+
 const DetailRecipe = ({route}) => {
   const {recipeData} = route.params;
   const recipe = recipeData.recipe;
@@ -89,6 +96,17 @@ const DetailRecipe = ({route}) => {
       instructions: cleanedInstructions,
     };
   });
+
+  const rating = async () => {
+    try {
+      const response = await axios.post(
+        'http://3.34.59.23/api/v1/recipes/recommendations/{recipe_id}/rate',
+      );
+      console.log(response.data);
+    } catch (error) {
+      console.log('에러남: ', error);
+    }
+  };
 
   return (
     <Container>
@@ -146,7 +164,18 @@ const DetailRecipe = ({route}) => {
             <Divider style={{marginBottom: 10}} />
           </StepWrapper>
         ))}
-        <Text>맛있게 드셨다면? 레시피를 평가해 주세요</Text>
+        <RatingFrame>
+          <Text style={{color: 'black', fontSize: 20}}>
+            맛있게 드셨다면? 레시피를 평가해 주세요
+          </Text>
+          <Text style={{marginTop: 40}}>
+            <Icon name="star" size={35} />
+            <Icon name="star" size={35} />
+            <Icon name="star" size={35} />
+            <Icon name="star" size={35} />
+            <Icon name="star" size={35} />
+          </Text>
+        </RatingFrame>
       </ContentWrapper>
     </Container>
   );

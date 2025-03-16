@@ -84,7 +84,6 @@ const FilterText = styled.Text`
 const SortButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  margin-bottom: 15px;
 `;
 
 const SortText = styled.Text`
@@ -158,7 +157,11 @@ const StatusContainer = styled.View`
   top: 30px;
   right: 10px;
   background-color: ${props =>
-    props.status === '모집중' ? '#4caf50' : '#ff9800'};
+    props.status === '모집중'
+      ? '#4caf50'
+      : props.status === '마감임박'
+      ? '#ff9800'
+      : '#f44336'};
   padding: 5px 10px;
   border-radius: 5px;
 `;
@@ -228,7 +231,7 @@ const GroupPurchases = ({navigation}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
 
-  // 카테고리 옵션
+  // 카테고리 옵션 - API의 카테고리와 일치하게 수정
   const categories = ['전체', '육류', '채소', '과일', '주류', '기타'];
 
   // 정렬 옵션
@@ -270,26 +273,6 @@ const GroupPurchases = ({navigation}) => {
       }
     }
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        const response = await axios.get(
-          'http://3.34.59.23/api/v1/group-purchases/',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-        console.log(response.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchData();
-  }, []);
 
   // 현재 위치 가져오기
   const getLocation = () => {
@@ -380,7 +363,6 @@ const GroupPurchases = ({navigation}) => {
     }
   };
 
-  // 상태 결정 로직 업데이트
   const formatApiData = apiResponse => {
     // API 응답 구조에 맞게 매핑
     return apiResponse.map(item => {
@@ -400,77 +382,42 @@ const GroupPurchases = ({navigation}) => {
         status = '모집중';
       }
 
+      // 할인율 계산
+      const originalPrice = item.original_price;
+      const discountPrice = item.price;
+      const discountRate =
+        originalPrice && originalPrice > discountPrice
+          ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100)
+          : 0;
+
+      // 이미지 URL 처리 - images 배열이 있고 첫 번째 이미지가 있으면 그 URL을 사용
+      const imageUrl =
+        item.images && item.images.length > 0 && item.images[0].image_url
+          ? item.images[0].image_url
+          : item.image_url || 'https://via.placeholder.com/500?text=No+Image';
+
       return {
         id: item.id.toString(),
         title: item.title,
         description: item.description || '',
-        originalPrice: Math.round(item.price * 1.2), // 원래 가격은 약 20% 할인된 것으로 표시
+        originalPrice: item.original_price, // API에서 제공하는 원가 사용
         discountPrice: item.price,
-        image:
-          item.image_url || 'https://via.placeholder.com/500?text=No+Image',
+        discountRate: discountRate, // 할인율 계산 추가
+        image: imageUrl,
+        images: item.images || [], // 전체 이미지 배열도 저장
         participants: item.current_participants || 0,
         maxParticipants: item.max_participants || 5,
         status: status,
         distance: item.distance || 0,
-        category: getCategoryFromTitle(item.title), // 제목에서 카테고리 추출
+        category: item.category, // API에서 제공하는 카테고리 사용
         endDate: item.end_date,
+        organizer: item.organizer_name || '익명',
       };
     });
   };
 
-  // StatusContainer 컴포넌트에 색상 로직 업데이트가 필요합니다.
-  const getStatusColor = status => {
-    switch (status) {
-      case '모집중':
-        return '#4caf50'; // 녹색
-      case '마감임박':
-        return '#ff9800'; // 주황색
-      case '마감':
-        return '#f44336'; // 빨간색
-      default:
-        return '#999999'; // 기본 회색
-    }
-  };
-
-  // 제목에서 카테고리 추출 함수
-  const getCategoryFromTitle = title => {
-    const titleLower = title.toLowerCase();
-
-    if (
-      titleLower.includes('식품') ||
-      titleLower.includes('음식') ||
-      titleLower.includes('유기농')
-    )
-      return '식품';
-    if (titleLower.includes('생활') || titleLower.includes('용품'))
-      return '생활용품';
-    if (
-      titleLower.includes('주방') ||
-      titleLower.includes('냄비') ||
-      titleLower.includes('그릇')
-    )
-      return '주방';
-    if (
-      titleLower.includes('레저') ||
-      titleLower.includes('캠핑') ||
-      titleLower.includes('운동')
-    )
-      return '레저';
-    if (titleLower.includes('가전') || titleLower.includes('전자'))
-      return '가전';
-    if (
-      titleLower.includes('옷') ||
-      titleLower.includes('의류') ||
-      titleLower.includes('패션')
-    )
-      return '의류';
-
-    // 기본값
-    return '기타';
-  };
-
   // 공동구매 참여 처리
-  const handleParticipate = item => {
+  const handleParticipate = async item => {
     if (item.status === '마감') {
       Alert.alert('안내', '이미 마감된 공동구매입니다.');
       return;
@@ -483,9 +430,42 @@ const GroupPurchases = ({navigation}) => {
       },
       {
         text: '참여하기',
-        onPress: () => {
-          // 참여 로직 구현
-          Alert.alert('성공', '공동구매 참여가 완료되었습니다.');
+        onPress: async () => {
+          try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem('accessToken');
+
+            // API 요청으로 참여 처리
+            await axios.post(
+              `http://3.34.59.23/api/v1/group-purchases/${item.id}/participate`,
+              {},
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              },
+            );
+
+            // 참여 성공 시 데이터 리로드
+            await loadData();
+            Alert.alert('성공', '공동구매 참여가 완료되었습니다.');
+          } catch (error) {
+            console.error('참여 실패:', error);
+            let errorMessage = '참여 처리 중 오류가 발생했습니다.';
+
+            if (error.response && error.response.data) {
+              if (error.response.data.detail) {
+                errorMessage = error.response.data.detail;
+              } else if (error.response.data.message) {
+                errorMessage = error.response.data.message;
+              }
+            }
+
+            Alert.alert('오류', errorMessage);
+          } finally {
+            setLoading(false);
+          }
         },
       },
     ]);
@@ -520,7 +500,6 @@ const GroupPurchases = ({navigation}) => {
   // 새 공동구매 등록으로 이동
   const handleCreateNewGroupPurchase = () => {
     navigation.navigate('RegistGroupPurchases');
-    Alert.alert('안내', '공동구매 등록 페이지로 이동합니다.');
   };
 
   const getTimeRemaining = endDate => {
@@ -598,6 +577,13 @@ const GroupPurchases = ({navigation}) => {
       </SafeContainer>
     );
   }
+
+  const navigateToDetailPage = item => {
+    navigation.navigate('GroupPurchaseDetail', {
+      itemId: item.id,
+      item: item, // 전체 아이템 정보도 함께 전달
+    });
+  };
 
   return (
     <SafeContainer>
@@ -677,7 +663,7 @@ const GroupPurchases = ({navigation}) => {
               processedData.map(item => (
                 <ItemContainer
                   key={item.id}
-                  onPress={() => handleParticipate(item)}>
+                  onPress={() => navigateToDetailPage(item)}>
                   <ItemImage source={{uri: item.image}} resizeMode="cover" />
                   <ItemInfo>
                     <View>
@@ -686,12 +672,24 @@ const GroupPurchases = ({navigation}) => {
                         {item.description}
                       </ItemDescription>
                       <PriceContainer>
-                        <OriginalPrice>
-                          {item.originalPrice.toLocaleString()}원
-                        </OriginalPrice>
+                        {item.originalPrice > item.discountPrice && (
+                          <OriginalPrice>
+                            {item.originalPrice.toLocaleString()}원
+                          </OriginalPrice>
+                        )}
                         <DiscountPrice>
                           {item.discountPrice.toLocaleString()}원
                         </DiscountPrice>
+                        {item.discountRate > 0 && (
+                          <Text
+                            style={{
+                              color: '#ff6b6b',
+                              fontSize: 14,
+                              marginLeft: 5,
+                            }}>
+                            {item.discountRate}% 할인
+                          </Text>
+                        )}
                       </PriceContainer>
                       <ParticipantContainer>
                         <Icon2 name="account-group" size={16} color="#666" />

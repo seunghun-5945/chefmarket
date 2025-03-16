@@ -92,6 +92,14 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('디버그 모드로 실행 중');
+    } else {
+      console.log('릴리즈 모드로 실행 중');
+    }
+  }, []);
+
   // 뉴스 데이터 가져오기
   useEffect(() => {
     const fetchNews = async () => {

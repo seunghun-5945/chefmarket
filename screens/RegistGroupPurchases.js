@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   Image,
+  FlatList,
 } from 'react-native';
 import styled from 'styled-components/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -114,7 +115,14 @@ const ImagePickerButton = styled.TouchableOpacity`
   margin-bottom: 10px;
 `;
 
+const ImagePreviewContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+`;
+
 const ImagePreview = styled.View`
+  width: 48%;
   height: 120px;
   border-radius: 8px;
   margin-bottom: 10px;
@@ -154,39 +162,76 @@ const RegistGroupPurchases = ({navigation}) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [originalPrice, setOriginalPrice] = useState('');
   const [maxParticipants, setMaxParticipants] = useState('5');
   const [endDate, setEndDate] = useState(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  ); // 기본값 1주일 후
+  );
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [imageUri, setImageUri] = useState(null);
+  const [files, setFiles] = useState([]); // 이미지 파일들
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // 카테고리 옵션
   const categories = ['육류', '채소', '과일', '주류', '기타'];
 
-  // 이미지 선택
+  // 여러 이미지 선택
   const handleImagePick = () => {
     const options = {
       mediaType: 'photo',
       includeBase64: false,
       maxHeight: 800,
       maxWidth: 800,
+      selectionLimit: 0, // 0은 제한 없음을 의미
     };
+
+    console.log('===== 이미지 선택 시작 =====');
+    console.log('이미지 피커 옵션:', options);
 
     ImagePicker.launchImageLibrary(options, response => {
       if (response.didCancel) {
-        console.log('User cancelled image picker');
+        console.log('사용자가 이미지 선택을 취소했습니다.');
       } else if (response.error) {
-        console.log('ImagePicker Error: ', response.error);
+        console.error('이미지 피커 에러:', response.error);
         Alert.alert('오류', '이미지를 불러오는데 문제가 발생했습니다.');
       } else {
+        console.log('이미지 피커 응답:', JSON.stringify(response, null, 2));
+
         if (response.assets && response.assets.length > 0) {
-          setImageUri(response.assets[0].uri);
+          // 새 이미지를 기존 이미지 배열에 추가
+          const newFiles = response.assets.map(asset => {
+            // 이미지 메타데이터 로깅
+            console.log('===== 선택한 이미지 메타데이터 =====');
+            console.log('원본 asset 정보:', JSON.stringify(asset, null, 2));
+            console.log(`파일 URI: ${asset.uri}`);
+            console.log(`파일 타입: ${asset.type || '타입 없음'}`);
+            console.log(`파일 이름: ${asset.fileName || '이름 없음'}`);
+            console.log(
+              `파일 크기: ${asset.fileSize || '크기 정보 없음'} 바이트`,
+            );
+
+            return {
+              uri: asset.uri,
+              type: asset.type || 'image/jpeg',
+              name: asset.fileName || `image_${Date.now()}.jpg`,
+            };
+          });
+
+          // 최대 5개 파일로 제한
+          const updatedFiles = [...files, ...newFiles].slice(0, 5);
+          console.log(
+            `파일 ${files.length}개에서 ${updatedFiles.length}개로 업데이트`,
+          );
+          setFiles(updatedFiles);
         }
       }
     });
+  };
+
+  // 이미지 제거 함수
+  const removeImage = index => {
+    console.log(`파일 ${index + 1} 제거`);
+    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
 
   // 날짜 선택 핸들러
@@ -210,6 +255,14 @@ const RegistGroupPurchases = ({navigation}) => {
     }
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
       Alert.alert('알림', '유효한 가격을 입력해주세요.');
+      return;
+    }
+    if (
+      !originalPrice ||
+      isNaN(Number(originalPrice)) ||
+      Number(originalPrice) <= 0
+    ) {
+      Alert.alert('알림', '유효한 원가를 입력해주세요.');
       return;
     }
     if (
@@ -239,73 +292,74 @@ const RegistGroupPurchases = ({navigation}) => {
       // 마감 날짜 포맷팅 (Z 제외)
       const formattedEndDate = endDate.toISOString().slice(0, -1);
 
-      // JSON 데이터 생성
-      const jsonData = {
-        title: title,
-        description: description,
-        price: Number(price),
-        max_participants: Number(maxParticipants),
-        end_date: formattedEndDate,
-        created_at: formattedNow,
-        updated_at: formattedNow,
-        current_participants: 0,
-        status: 'open',
-        category: selectedCategory, // 카테고리 추가
-      };
+      // FormData 생성
+      const formData = new FormData();
 
-      console.log('요청 데이터:', jsonData);
+      // 텍스트 데이터 추가
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('price', price);
+      formData.append('original_price', originalPrice);
+      formData.append('max_participants', maxParticipants);
+      formData.append('end_date', formattedEndDate);
+      formData.append('created_at', formattedNow);
+      formData.append('updated_at', formattedNow);
+      formData.append('current_participants', 0);
+      formData.append('status', 'open');
+      formData.append('category', selectedCategory);
 
-      // API 요청 (JSON 형식)
+      // 파일 데이터 추가
+      if (files.length > 0) {
+        files.forEach((file, index) => {
+          console.log(`FormData에 파일 추가 ${index + 1}:`, file);
+          formData.append('files', file);
+        });
+      }
+
+      // 요청 정보 로깅
+      console.log('===== 요청 정보 =====');
+      console.log('요청 URL:', 'http://3.34.59.23/api/v1/group-purchases/');
+      console.log('요청 메소드:', 'POST');
+      console.log('요청 헤더:', {
+        Authorization:
+          'Bearer ' + (token ? token.substring(0, 10) + '...' : 'null'),
+        'Content-Type': 'multipart/form-data',
+      });
+
+      // 비파일 필드 로깅 - FormData는 직접 로깅이 어려워 데이터만 출력
+      console.log('FormData에 추가된 텍스트 필드:');
+      console.log('title:', title);
+      console.log('description:', description);
+      console.log('price:', price);
+      console.log('original_price:', originalPrice);
+      console.log('max_participants:', maxParticipants);
+      console.log('end_date:', formattedEndDate);
+      console.log('category:', selectedCategory);
+
+      // 파일 정보 로깅
+      console.log(`첨부 파일 수: ${files.length}`);
+      files.forEach((file, index) => {
+        console.log(
+          `파일 ${index + 1} - 이름: ${file.name}, 타입: ${file.type}`,
+        );
+      });
+
+      // API 요청
       const response = await axios.post(
         'http://3.34.59.23/api/v1/group-purchases/',
-        jsonData,
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
           },
         },
       );
 
-      console.log('공동구매 등록 성공:', response.data);
-
-      // 이미지가 있는 경우 별도 요청으로 업로드
-      if (imageUri) {
-        try {
-          const imageFormData = new FormData();
-          const uriParts = imageUri.split('/');
-          const fileName = uriParts[uriParts.length - 1];
-
-          imageFormData.append('image', {
-            uri: imageUri,
-            type: 'image/jpeg',
-            name: fileName,
-          });
-
-          // 생성된 공동구매 ID를 사용하여 이미지 업로드
-          const imageResponse = await axios.post(
-            `http://3.34.59.23/api/v1/group-purchases/${response.data.id}/image`,
-            imageFormData,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data',
-              },
-            },
-          );
-
-          console.log('이미지 업로드 성공:', imageResponse.data);
-        } catch (imageError) {
-          console.error('이미지 업로드 실패:', imageError);
-          // 이미지 업로드가 실패해도 공동구매 등록은 성공했으므로 사용자에게 알림
-          Alert.alert(
-            '알림',
-            '공동구매는 등록되었지만 이미지 업로드에 실패했습니다.',
-          );
-          navigation.goBack();
-          return;
-        }
-      }
+      // 응답 정보 로깅
+      console.log('===== 응답 정보 =====');
+      console.log('응답 상태:', response.status, response.statusText);
+      console.log('응답 데이터:', JSON.stringify(response.data, null, 2));
 
       Alert.alert('성공', '공동구매가 성공적으로 등록되었습니다.', [
         {
@@ -314,18 +368,30 @@ const RegistGroupPurchases = ({navigation}) => {
         },
       ]);
     } catch (error) {
-      console.error('공동구매 등록 실패:', error);
+      console.error('===== 오류 정보 =====');
+      console.error('오류 타입:', error.name);
+      console.error('오류 메시지:', error.message);
+
       let errorMessage = '공동구매 등록 중 오류가 발생했습니다.';
 
       if (error.response) {
-        console.log('Error status:', error.response.status);
-        console.log('Error data:', error.response.data);
+        // 서버 응답이 있는 경우
+        console.error('오류 상태:', error.response.status);
+        console.error(
+          '오류 데이터:',
+          JSON.stringify(error.response.data, null, 2),
+        );
 
         if (error.response.data && error.response.data.detail) {
           errorMessage = `오류: ${error.response.data.detail}`;
         } else if (error.response.data && error.response.data.message) {
           errorMessage = error.response.data.message;
         }
+      } else if (error.request) {
+        // 요청은 보냈지만 응답이 없는 경우
+        console.error('요청만 전송됨:', error.request);
+        errorMessage =
+          '서버로부터 응답이 없습니다. 네트워크 연결을 확인해주세요.';
       }
 
       Alert.alert('오류', errorMessage);
@@ -368,6 +434,16 @@ const RegistGroupPurchases = ({navigation}) => {
               keyboardType="numeric"
               value={price}
               onChangeText={setPrice}
+            />
+          </FormGroup>
+
+          <FormGroup>
+            <Label>원가</Label>
+            <Input
+              placeholder="공구로 아낄 수 있는 금액을 제공하기 위해 원가를 입력해 주세요 (원)"
+              keyboardType="numeric"
+              value={originalPrice}
+              onChangeText={setOriginalPrice}
             />
           </FormGroup>
 
@@ -423,35 +499,41 @@ const RegistGroupPurchases = ({navigation}) => {
           </FormGroup>
 
           <FormGroup>
-            <Label>이미지</Label>
-            {imageUri ? (
-              <ImagePreview>
-                <Image
-                  source={{uri: imageUri}}
-                  style={{width: '100%', height: '100%'}}
-                  resizeMode="cover"
-                />
-                <TouchableOpacity
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    borderRadius: 15,
-                    width: 30,
-                    height: 30,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                  onPress={() => setImageUri(null)}>
-                  <Icon name="close" size={20} color="white" />
-                </TouchableOpacity>
-              </ImagePreview>
-            ) : (
+            <Label>이미지 ({files.length}/5)</Label>
+            {files.length < 5 && (
               <ImagePickerButton onPress={handleImagePick}>
                 <Icon name="add-photo-alternate" size={40} color="#999" />
                 <Text style={{marginTop: 8, color: '#999'}}>이미지 추가</Text>
               </ImagePickerButton>
+            )}
+
+            {files.length > 0 && (
+              <ImagePreviewContainer>
+                {files.map((file, index) => (
+                  <ImagePreview key={index}>
+                    <Image
+                      source={{uri: file.uri}}
+                      style={{width: '100%', height: '100%'}}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        borderRadius: 15,
+                        width: 30,
+                        height: 30,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                      onPress={() => removeImage(index)}>
+                      <Icon name="close" size={20} color="white" />
+                    </TouchableOpacity>
+                  </ImagePreview>
+                ))}
+              </ImagePreviewContainer>
             )}
           </FormGroup>
 
