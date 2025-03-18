@@ -351,7 +351,6 @@ const TradeMessage = ({
       </TradeHeader>
 
       <TradeContent>약속시간: {tradeInfo.time}</TradeContent>
-      <TradeContent>장소: {tradeInfo.location}</TradeContent>
 
       {/* 거래약속 메시지이고, 내가 보낸 메시지가 아닐 경우에만 버튼 표시 */}
       {isTradeProposal && !isSender && (

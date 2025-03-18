@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  Dimensions,
 } from 'react-native';
 import {Text} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -27,6 +29,8 @@ const SafeContainer = styled.SafeAreaView`
 const Container = styled.View`
   flex: 1;
   background-color: #f5f5f5;
+  padding-bottom: ${props =>
+    Platform.OS === 'ios' && props.keyboardHeight > 0 ? '60px' : '0'};
 `;
 
 const Header = styled.View`
@@ -51,9 +55,27 @@ const BackButton = styled.TouchableOpacity`
 const ChatContainer = styled.View`
   flex: 1;
   padding: 10px;
+  /* iOS에서 키보드가 올라왔을 때 채팅 영역이 입력창 뒤로 가려지지 않도록 */
+  padding-bottom: ${props =>
+    Platform.OS === 'ios' && props.keyboardHeight > 0
+      ? props.keyboardHeight + 'px'
+      : '0'};
 `;
 
-// 채팅 입력 관련
+// 채팅 입력창을 위한 Wrapper 컴포넌트 추가
+const InputWrapper = styled.View`
+  width: 100%;
+  background-color: white;
+  padding-bottom: ${Platform.OS === 'ios' ? 0 : 20}px;
+  margin-bottom: ${props =>
+    Platform.OS === 'ios' ? props.keyboardHeight : 0}px;
+  /* iOS에서는 반드시 position을 absolute로 설정하고 zIndex를 높게 설정 */
+  position: ${Platform.OS === 'ios' ? 'absolute' : 'relative'};
+  bottom: 0;
+  z-index: 999;
+`;
+
+// 기존 InputContainer는 그대로 유지하되 position: absolute 제거
 const InputContainer = styled.View`
   flex-direction: row;
   align-items: center;
@@ -61,6 +83,7 @@ const InputContainer = styled.View`
   background-color: white;
   border-top-width: 1px;
   border-top-color: #eee;
+  width: 100%;
 `;
 
 const MessageInput = styled.TextInput`
@@ -99,6 +122,27 @@ const OtherMessage = styled(MessageItem)`
   background-color: white;
   border-width: 1px;
   border-color: #eeeeee;
+  margin-left: 40px; /* 프로필 이미지 공간 확보 */
+`;
+
+const ProfileImage = styled.Image`
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  position: absolute;
+  bottom: 50px;
+`;
+
+const MessageContainer = styled.View`
+  position: relative;
+  margin-bottom: 10px;
+`;
+
+const SenderName = styled.Text`
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 10px;
+  margin-left: 45px;
 `;
 
 const MessageText = styled.Text`
@@ -215,6 +259,9 @@ const Chat = ({route, navigation}) => {
   const [isArrived, setIsArrived] = useState(false);
   const [showCancelNotification, setShowCancelNotification] = useState(false);
   const [salesStatus, setSalesStatus] = useState(null);
+  const [otherUserProfile, setOtherUserProfile] = useState(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const flatListRef = useRef();
 
@@ -246,6 +293,43 @@ const Chat = ({route, navigation}) => {
 
     checkSalesStatus();
   }, [itemId]);
+
+  useEffect(() => {
+    const keyboardWillShow = event => {
+      if (Platform.OS === 'ios') {
+        const keyboardHeight = event.endCoordinates.height;
+        setKeyboardHeight(keyboardHeight);
+
+        // 키보드가 올라올 때 맨 아래로 스크롤
+        if (flatListRef.current && messages.length > 0) {
+          setTimeout(() => {
+            flatListRef.current.scrollToEnd({animated: false});
+          }, 100);
+        }
+      } else {
+        setKeyboardHeight(event.endCoordinates.height);
+      }
+    };
+
+    const keyboardWillHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      keyboardWillShow,
+    );
+
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      keyboardWillHide,
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [messages.length]); // messages.length 추가로 의존성 설정
 
   const renderTradeButton = () => {
     if (isTradeButtonLoading) {
@@ -442,6 +526,48 @@ const Chat = ({route, navigation}) => {
     }
   };
 
+  // 상대방 정보를 가져오는 함수
+  const fetchOtherUserInfo = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) return;
+
+      // 현재 사용자가 누구인지에 따라 상대방 ID 결정
+      const otherUserId = realUserId === sellerId ? buyerId : sellerId;
+
+      // 사용자 정보 API 호출
+      const response = await axios.get(
+        `http://3.34.59.23/api/v1/users/${otherUserId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (response.data) {
+        setOtherUserProfile(response.data);
+        logMessage('상대방 프로필 정보 로드 성공', {
+          닉네임: response.data.nickname,
+          프로필이미지: response.data.profile_image_url,
+        });
+      }
+    } catch (error) {
+      console.error('상대방 정보 가져오기 실패:', error);
+      logMessage('상대방 정보 가져오기 오류', {
+        error: error.message,
+      });
+    }
+  };
+
+  // realUserId가 설정된 후 상대방 정보 가져오기
+  useEffect(() => {
+    if (realUserId !== null) {
+      fetchOtherUserInfo();
+    }
+  }, [realUserId]);
+
   const handleWebSocketMessage = data => {
     logMessage('웹소켓 메시지 수신', {
       데이터타입: typeof data,
@@ -480,11 +606,31 @@ const Chat = ({route, navigation}) => {
 
         // 히스토리 메시지를 상태에 맞게 변환
         const historyMessages = parsedData.messages.map(msg => {
+          // 타임스탬프 처리 - 9시간 추가
+          let messageTimestamp;
+          try {
+            if (msg.timestamp) {
+              messageTimestamp = new Date(msg.timestamp);
+              // 한국 시간으로 조정 (UTC+9)
+              messageTimestamp.setHours(messageTimestamp.getHours() + 9);
+              logMessage('시간 보정 (히스토리)', {
+                원본시간: msg.timestamp,
+                보정시간: messageTimestamp.toISOString(),
+              });
+            } else {
+              messageTimestamp = new Date();
+            }
+          } catch (e) {
+            logMessage('타임스탬프 변환 오류', e.message);
+            messageTimestamp = new Date();
+          }
+
           const msgObj = {
             id: msg.id.toString(),
             text: msg.content,
             sender: msg.sender_id,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            timestamp: messageTimestamp,
+            rawTimestamp: msg.timestamp, // 원본 타임스탬프도 저장 (디버깅용)
           };
 
           // 취소 알림 메시지 식별
@@ -511,6 +657,7 @@ const Chat = ({route, navigation}) => {
             메시지:
               msg.text.substring(0, 30) + (msg.text.length > 30 ? '...' : ''),
             시간: msg.timestamp.toISOString(),
+            원본시간: msg.rawTimestamp,
           });
         });
 
@@ -528,14 +675,35 @@ const Chat = ({route, navigation}) => {
       // 일반 채팅 메시지 처리
       let messageContent = '';
       let messageSenderId = '';
+      let messageTimestamp = null;
 
       // 객체 형태 메시지 처리
       if (parsedData && typeof parsedData === 'object') {
         messageContent = parsedData.content || '';
         messageSenderId = parsedData.sender_id || '';
+
+        // 타임스탬프 처리 (있는 경우)
+        if (parsedData.timestamp) {
+          try {
+            messageTimestamp = new Date(parsedData.timestamp);
+            // 한국 시간으로 조정 (UTC+9)
+            messageTimestamp.setHours(messageTimestamp.getHours() + 9);
+            logMessage('시간 보정 (실시간 메시지)', {
+              원본시간: parsedData.timestamp,
+              보정시간: messageTimestamp.toISOString(),
+            });
+          } catch (e) {
+            logMessage('타임스탬프 변환 오류', e.message);
+            messageTimestamp = null;
+          }
+        }
+
         logMessage('객체 메시지 처리', {
           내용: messageContent,
           발신자ID: messageSenderId,
+          시간: messageTimestamp
+            ? messageTimestamp.toISOString()
+            : '시간 정보 없음',
         });
       }
       // 문자열 형태 메시지 처리
@@ -548,6 +716,17 @@ const Chat = ({route, navigation}) => {
               const innerParsed = JSON.parse(match[1]);
               messageContent = innerParsed.content || '';
               messageSenderId = innerParsed.sender_id || '';
+
+              // 타임스탬프 처리 (있는 경우)
+              if (innerParsed.timestamp) {
+                try {
+                  messageTimestamp = new Date(innerParsed.timestamp);
+                  // 한국 시간으로 조정 (UTC+9)
+                  messageTimestamp.setHours(messageTimestamp.getHours() + 9);
+                } catch (e) {
+                  messageTimestamp = null;
+                }
+              }
             } catch (e) {
               messageContent = match[1];
               messageSenderId = sellerId;
@@ -577,14 +756,22 @@ const Chat = ({route, navigation}) => {
         수신자: isSenderMe ? '상대방' : '나(사용자)',
         메시지내용: messageContent,
         채팅방ID: actualChatId,
+        시간: messageTimestamp
+          ? messageTimestamp.toISOString()
+          : '시간 정보 없음',
       });
 
       // 새 메시지 객체 생성
+      // 타임스탬프가 없는 경우 현재 시간에 9시간 추가
+      const now = new Date();
+      now.setHours(now.getHours() + 9); // 현재 시간에도 9시간 추가
+
       const newMessage = {
         id: Date.now().toString(),
         text: messageContent,
         sender: messageSenderId,
-        timestamp: new Date(),
+        timestamp: messageTimestamp || now, // 메시지에 타임스탬프가 있으면 사용, 없으면 보정된 현재 시간 사용
+        rawTimestamp: parsedData.timestamp || now.toISOString(), // 원본 타임스탬프 저장 (디버깅용)
       };
 
       // 취소 알림 메시지 식별
@@ -598,6 +785,7 @@ const Chat = ({route, navigation}) => {
         메시지ID: newMessage.id,
         발신자ID: newMessage.sender,
         시간: newMessage.timestamp.toISOString(),
+        원본시간: newMessage.rawTimestamp,
       });
     } catch (error) {
       logMessage('메시지 처리 오류', error.message);
@@ -796,7 +984,6 @@ const Chat = ({route, navigation}) => {
     }
   };
 
-  // 메시지 전송 함수
   const sendMessage = () => {
     if (!inputMessage.trim()) return;
 
@@ -818,13 +1005,17 @@ const Chat = ({route, navigation}) => {
       return;
     }
 
+    // 현재 시간에 9시간을 더함
+    const now = new Date();
+    now.setHours(now.getHours() + 9); // 9시간 추가
+
     // type 필드 추가하고 숫자 타입을 사용하는 ID 변환
     const messageData = {
       type: 'chat',
       content: inputMessage,
       chat_id: parseInt(actualChatId, 10),
       sender_id: parseInt(realUserId, 10), // 실제 사용자 ID 사용
-      timestamp: new Date().toISOString(),
+      timestamp: now.toISOString(), // 9시간 더한 시간 사용
     };
 
     // 메시지 발신 정보 명확히 로깅
@@ -844,11 +1035,24 @@ const Chat = ({route, navigation}) => {
       id: Date.now().toString(),
       text: inputMessage,
       sender: realUserId, // 실제 사용자 ID 사용
-      timestamp: new Date(),
+      timestamp: now, // 9시간 더한 시간 객체 사용
     };
 
     // 메시지 추가
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => {
+      const updatedMessages = [...prev, newMessage];
+
+      // 상태 업데이트 후 스크롤 실행을 위해 setTimeout 사용
+      setTimeout(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({
+            animated: Platform.OS === 'android',
+          });
+        }
+      }, 0); // 지연 시간을 0으로 설정
+
+      return updatedMessages;
+    });
 
     // 소켓으로 메시지 전송
     try {
@@ -1063,8 +1267,13 @@ const Chat = ({route, navigation}) => {
   };
 
   const renderMessage = ({item, index}) => {
-    // 내 메시지인지 판단 (실제 사용자 ID와 비교)
     const isMyMessage = String(item.sender) === String(realUserId);
+
+    let isConsecutive = false;
+    if (index > 0) {
+      const previousMessage = messages[index - 1];
+      isConsecutive = String(previousMessage.sender) === String(item.sender);
+    }
 
     // 디버깅용 로그 추가
     console.log('메시지 렌더링:', {
@@ -1084,9 +1293,7 @@ const Chat = ({route, navigation}) => {
 
     // 거래약속 메시지인 경우 특별한 컴포넌트 렌더링
     if (isTradeMessage(item.text)) {
-      // 이 메시지에 저장된 날짜 객체가 있으면 사용, 없으면 마지막으로 저장된 날짜 사용
-      const appointmentDate = item.appointmentDate || lastAppointmentDate;
-
+      // 기존 코드...
       return (
         <TradeMessage
           message={item.text}
@@ -1103,8 +1310,8 @@ const Chat = ({route, navigation}) => {
       );
     }
 
-    // 알림 메시지인 경우 NotificationMessage 컴포넌트 렌더링
     if (isNotificationMessage(item.text)) {
+      // 기존 코드...
       return (
         <NotificationMessage
           message={item.text}
@@ -1117,9 +1324,8 @@ const Chat = ({route, navigation}) => {
       );
     }
 
-    // 취소 알림 메시지 특별 처리 (수정된 부분)
     if (item.isCancelNotification || item.text.includes('[알림:취소알림]')) {
-      // 이미 이전에 취소 알림이 표시되었는지 확인
+      // 기존 코드...
       const isFirstCancelNotification = !messages
         .slice(0, index)
         .some(
@@ -1127,7 +1333,6 @@ const Chat = ({route, navigation}) => {
             msg.isCancelNotification || msg.text.includes('[알림:취소알림]'),
         );
 
-      // 첫 번째 취소 알림이고, 내가 보낸 메시지일 때만 취소 버튼이 있는 알림을 보여줌
       if (isFirstCancelNotification && isMyMessage) {
         return (
           <CancelNotification
@@ -1139,9 +1344,7 @@ const Chat = ({route, navigation}) => {
             chatId={actualChatId}
           />
         );
-      }
-      // 상대방의 취소 알림은 일반 알림으로 표시 (버튼 없이)
-      else if (isFirstCancelNotification && !isMyMessage) {
+      } else if (isFirstCancelNotification && !isMyMessage) {
         return (
           <NotificationMessage
             message="상대방이 거래 장소에 도착했습니다."
@@ -1151,26 +1354,46 @@ const Chat = ({route, navigation}) => {
           />
         );
       }
-      // 중복된 취소 알림은 표시하지 않음
       return null;
     }
 
-    // 일반 메시지 렌더링 (기존 코드)
-    return isMyMessage ? (
-      <MyMessage>
-        <MessageText isMyMessage={true}>{item.text}</MessageText>
-        <TimeText isMyMessage={true}>
-          {formatRelativeTime(item.timestamp)}
-        </TimeText>
-      </MyMessage>
-    ) : (
-      <OtherMessage>
-        <MessageText isMyMessage={false}>{item.text}</MessageText>
-        <TimeText isMyMessage={false}>
-          {formatRelativeTime(item.timestamp)}
-        </TimeText>
-      </OtherMessage>
-    );
+    if (isMyMessage) {
+      // 내 메시지는 기존과 동일하게 표시
+      return (
+        <MyMessage>
+          <MessageText isMyMessage={true}>{item.text}</MessageText>
+          <TimeText isMyMessage={true}>
+            {formatRelativeTime(item.timestamp)}
+          </TimeText>
+        </MyMessage>
+      );
+    } else {
+      // 상대방 메시지에 프로필 사진과 이름 추가
+      return (
+        <MessageContainer>
+          {/* 연속 메시지가 아닐 때만 프로필 사진과 이름 표시 */}
+          {!isConsecutive && otherUserProfile && (
+            <>
+              <ProfileImage
+                source={{
+                  uri:
+                    otherUserProfile.profile_image_url ||
+                    'https://via.placeholder.com/32',
+                }}
+                resizeMode="cover"
+              />
+              <SenderName>{otherUserProfile.nickname || sellerName}</SenderName>
+            </>
+          )}
+          <OtherMessage>
+            <MessageText isMyMessage={false}>{item.text}</MessageText>
+            <TimeText isMyMessage={false}>
+              {formatRelativeTime(item.timestamp)}
+            </TimeText>
+          </OtherMessage>
+        </MessageContainer>
+      );
+    }
   };
 
   const openTradeModal = () => {
@@ -1444,70 +1667,101 @@ const Chat = ({route, navigation}) => {
         <HeaderTitle>{sellerName}</HeaderTitle>
       </Header>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{flex: 1}}>
-        <Container>
-          <ProductInfoContainer>
-            <ProductImage
-              source={{uri: productData.images[0]}}
-              resizeMode="cover"
-            />
-            <ProductLeftFrame>
-              <ProductInfo>
-                <ProductTitle>{productData.title}</ProductTitle>
-                <ProductPrice>{productData.value}원</ProductPrice>
-              </ProductInfo>
-            </ProductLeftFrame>
-            <ProductLeftFrame>{renderTradeButton()}</ProductLeftFrame>
-          </ProductInfoContainer>
-
-          <ChatContainer>
-            {messages.length === 0 ? (
-              <EmptyView>
-                <EmptyText>메시지가 없습니다. 대화를 시작해보세요!</EmptyText>
-              </EmptyView>
-            ) : (
-              <FlatList
-                ref={flatListRef}
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={item => {
-                  return `${item.id}_${item.timestamp.getTime()}`;
-                }}
-                contentContainerStyle={{padding: 10}}
-                onContentSizeChange={() =>
-                  flatListRef.current?.scrollToEnd({animated: true})
-                }
-              />
-            )}
-          </ChatContainer>
-
-          <InputContainer>
-            <MessageInput
-              placeholder="메시지를 입력하세요"
-              value={inputMessage}
-              onChangeText={setInputMessage}
-              onSubmitEditing={sendMessage}
-            />
-            <SendButton onPress={sendMessage} disabled={!connected}>
-              <Icon name="send" size={18} color="white" />
-            </SendButton>
-          </InputContainer>
-
-          <TradeModal
-            visible={isModalVisible}
-            onClose={closeTradeModal}
-            onConfirm={confirmTradeModal}
-            itemTitle={productData?.title}
-            itemLocation={
-              productData?.location
-                ? `${productData.location.latitude}, ${productData.location.longitude}`
-                : ''
-            } // 위치 정보 전달
+      <Container>
+        <ProductInfoContainer>
+          <ProductImage
+            source={{uri: productData.images[0]}}
+            resizeMode="cover"
           />
-        </Container>
-      </KeyboardAvoidingView>
+          <ProductLeftFrame>
+            <ProductInfo>
+              <ProductTitle>{productData.title}</ProductTitle>
+              <ProductPrice>{productData.value}원</ProductPrice>
+            </ProductInfo>
+          </ProductLeftFrame>
+          <ProductLeftFrame>{renderTradeButton()}</ProductLeftFrame>
+        </ProductInfoContainer>
+
+        <ChatContainer>
+          {messages.length === 0 ? (
+            <EmptyView>
+              <EmptyText>메시지가 없습니다. 대화를 시작해보세요!</EmptyText>
+            </EmptyView>
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => `${item.id}_${item.timestamp.getTime()}`}
+              contentContainerStyle={{
+                padding: 10,
+                paddingBottom:
+                  Platform.OS === 'ios'
+                    ? keyboardHeight > 0
+                      ? keyboardHeight + 60
+                      : 60
+                    : 10,
+              }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive" // iOS에서 스크롤할 때 키보드 내려가도록
+              onContentSizeChange={() => {
+                if (messages.length > 0) {
+                  setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({
+                      animated: Platform.OS === 'android',
+                    });
+                  }, 100);
+                }
+              }}
+              onLayout={() => {
+                if (messages.length > 0) {
+                  setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({
+                      animated: Platform.OS === 'android',
+                    });
+                  }, 100);
+                }
+              }}
+            />
+          )}
+        </ChatContainer>
+      </Container>
+
+      <InputWrapper keyboardHeight={keyboardHeight}>
+        <InputContainer>
+          <MessageInput
+            placeholder="메시지를 입력하세요"
+            value={inputMessage}
+            onChangeText={setInputMessage}
+            onSubmitEditing={sendMessage}
+            onFocus={() => {
+              // 키보드가 올라올 때 맨 아래로 스크롤
+              if (flatListRef.current && messages.length > 0) {
+                setTimeout(() => {
+                  flatListRef.current.scrollToEnd({
+                    animated: Platform.OS === 'android',
+                  });
+                }, 100);
+              }
+            }}
+          />
+          <SendButton onPress={sendMessage} disabled={!connected}>
+            <Icon name="send" size={18} color="white" />
+          </SendButton>
+        </InputContainer>
+      </InputWrapper>
+
+      <TradeModal
+        visible={isModalVisible}
+        onClose={closeTradeModal}
+        onConfirm={confirmTradeModal}
+        itemTitle={productData?.title}
+        itemLocation={
+          productData?.location
+            ? `${productData.location.latitude}, ${productData.location.longitude}`
+            : ''
+        }
+      />
     </SafeContainer>
   );
 };

@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from "react";
-import styled from "styled-components/native";
-import { Text, Keyboard, Platform, Alert, TouchableOpacity, View, Dimensions } from "react-native";
+import React, {useEffect, useState} from 'react';
+import styled from 'styled-components/native';
+import {
+  Text,
+  Keyboard,
+  Platform,
+  Alert,
+  TouchableOpacity,
+  View,
+  Dimensions,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from "@react-navigation/native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {useNavigation} from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Container = styled.SafeAreaView`
   flex: 1;
@@ -43,7 +51,7 @@ const InputBox = styled.TextInput`
   border-radius: 8px;
   font-size: 20px;
   padding-left: 10px;
-  padding-right: ${props => props.hasEyeIcon ? "50px" : "10px"};
+  padding-right: ${props => (props.hasEyeIcon ? '50px' : '10px')};
 `;
 
 const ReadOnlyInputBox = styled(InputBox)`
@@ -73,17 +81,18 @@ const NextButton = styled.TouchableOpacity`
   height: 50px;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.enabled ? 'orange' : '#ccc'};
+  background-color: ${props => (props.enabled ? 'orange' : '#ccc')};
   position: absolute;
   bottom: 0;
-  opacity: ${props => props.enabled ? 1 : 0.7};
+  opacity: ${props => (props.enabled ? 1 : 0.7)};
 `;
 
 const ButtonWrapper = styled.View`
   width: 100%;
   background-color: white;
   padding-bottom: ${Platform.OS === 'ios' ? 0 : 20}px;
-  margin-bottom: ${props => Platform.OS === 'ios' ? props.keyboardHeight : 0}px;
+  margin-bottom: ${props =>
+    Platform.OS === 'ios' ? props.keyboardHeight : 0}px;
   ${Platform.OS === 'ios' && 'position: absolute; bottom: 0;'}
 `;
 
@@ -97,38 +106,32 @@ const ErrorText = styled.Text`
 
 const SignIn = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [username, setUsername] = useState("");
-  const [password, setPw] = useState("");
+  const [username, setUsername] = useState('');
+  const [password, setPw] = useState('');
   const [arrayIndex, setArrayIndex] = useState(0);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const navigation = useNavigation();
 
-  const titleTextArray = [
-    "아이디를 입력해 주세요",
-    "비밀번호를 확인합니다",
-  ];
-  
-  const placeHolderArray = [
-    "아이디",
-    "비밀번호",
-  ];
+  const titleTextArray = ['아이디를 입력해 주세요', '비밀번호를 확인합니다'];
 
-const saveToken = async (token) => {
-  try {
-    await AsyncStorage.setItem('accessToken', token); 
-    await AsyncStorage.setItem('lastLoginTime', new Date().toISOString());
-    console.log('Token saved successfully');
-  } catch (error) {
-    console.error('Error saving token:', error);
-  }
-};
-  
+  const placeHolderArray = ['아이디', '비밀번호'];
+
+  const saveToken = async token => {
+    try {
+      await AsyncStorage.setItem('accessToken', token);
+      await AsyncStorage.setItem('lastLoginTime', new Date().toISOString());
+      console.log('Token saved successfully');
+    } catch (error) {
+      console.error('Error saving token:', error);
+    }
+  };
+
   const valueArray = [username, password];
 
   useEffect(() => {
-    const keyboardWillShow = (event) => {
+    const keyboardWillShow = event => {
       if (Platform.OS === 'ios') {
         setKeyboardHeight(event.endCoordinates.height);
       } else {
@@ -144,12 +147,12 @@ const saveToken = async (token) => {
 
     const showSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      keyboardWillShow
+      keyboardWillShow,
     );
 
     const hideSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      keyboardWillHide
+      keyboardWillHide,
     );
 
     return () => {
@@ -158,25 +161,25 @@ const saveToken = async (token) => {
     };
   }, []);
 
-  const handleChangeUsername = (value) => {
-    setErrorMessage("");
+  const handleChangeUsername = value => {
+    setErrorMessage('');
     setUsername(value);
   };
 
-  const handleChangePw = (value) => {
-    setErrorMessage("");
+  const handleChangePw = value => {
+    setErrorMessage('');
     setPw(value);
   };
 
-  const validateUsername = (username) => {
+  const validateUsername = username => {
     return username.length >= 2;
   };
 
-  const validatePassword = (password) => {
+  const validatePassword = password => {
     return password.length >= 8;
   };
 
-  const handleInputChange = (value) => {
+  const handleInputChange = value => {
     switch (arrayIndex) {
       case 0:
         handleChangeUsername(value);
@@ -191,15 +194,15 @@ const saveToken = async (token) => {
     switch (arrayIndex) {
       case 0:
         if (!validateUsername(username)) {
-          setErrorMessage("아이디는 2글자 이상이어야 합니다.");
+          setErrorMessage('아이디는 2글자 이상이어야 합니다.');
           return;
         }
         setArrayIndex(1);
         break;
-      
+
       case 1:
         if (!validatePassword(password)) {
-          setErrorMessage("비밀번호는 8자 이상이어야 합니다.");
+          setErrorMessage('비밀번호는 8자 이상이어야 합니다.');
           return;
         }
         handleSignIn();
@@ -231,44 +234,37 @@ const saveToken = async (token) => {
       formData.append('scope', '');
       formData.append('client_id', '');
       formData.append('client_secret', '');
-  
+
       const response = await axios.post(
-        'http://3.34.59.23/api/v1/auth/login', 
+        'http://3.34.59.23/api/v1/auth/login',
         formData.toString(),
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
-          }
-        }
+            Accept: 'application/json',
+          },
+        },
       );
 
       const accessToken = response.data.access_token;
       await saveToken(accessToken);
-      
-      console.log("로그인 성공:", response.data);
-      
-      Alert.alert(
-        "로그인 완료",
-        "로그인에 성공했습니다.",
-        [{ text: "확인", onPress: () => navigation.navigate("Home") }]
-      );
-      
+
+      console.log('로그인 성공:', response.data);
+
+      Alert.alert('로그인 완료', '로그인에 성공했습니다.', [
+        {text: '확인', onPress: () => navigation.navigate('Home')},
+      ]);
     } catch (error) {
-      console.log("로그인 실패:", error.response?.data || error);
-      
-      let errorMsg = "로그인에 실패했습니다.";
+      console.log('로그인 실패:', error.response?.data || error);
+      setPw('');
+      let errorMsg = '로그인에 실패했습니다.';
       if (error.response?.data?.error_description) {
         errorMsg = error.response.data.error_description;
       } else if (error.response?.data?.message) {
         errorMsg = error.response.data.message;
       }
-      
-      Alert.alert(
-        "로그인 실패",
-        errorMsg,
-        [{ text: "확인" }]
-      );
+
+      Alert.alert('로그인 실패', errorMsg, [{text: '확인'}]);
     }
   };
 
@@ -291,9 +287,9 @@ const saveToken = async (token) => {
           />
           {arrayIndex === 1 && (
             <EyeIconButton onPress={togglePasswordVisibility}>
-              <Icon 
+              <Icon
                 name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={24} 
+                size={24}
                 color="gray"
               />
             </EyeIconButton>
@@ -302,17 +298,17 @@ const saveToken = async (token) => {
         {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
       </Wrapper>
       <ButtonWrapper keyboardHeight={keyboardHeight}>
-        <NextButton 
+        <NextButton
           onPress={handleCheckInput}
           enabled={isButtonEnabled()}
-          disabled={!isButtonEnabled()}
-        >
-          <Text style={{
-            fontSize: 20, 
-            fontWeight: "bold",
-            color: isButtonEnabled() ? 'black' : '#666'
-          }}>
-            {arrayIndex === 1 ? "로그인" : "다음"}
+          disabled={!isButtonEnabled()}>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: isButtonEnabled() ? 'black' : '#666',
+            }}>
+            {arrayIndex === 1 ? '로그인' : '다음'}
           </Text>
         </NextButton>
       </ButtonWrapper>

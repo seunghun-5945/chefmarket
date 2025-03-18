@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   Platform,
-  TextInput,
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -99,11 +98,10 @@ const ButtonText = styled.Text`
 `;
 
 // 거래약속 모달 컴포넌트
-const TradeModal = ({visible, onClose, onConfirm, itemTitle, itemLocation}) => {
+const TradeModal = ({visible, onClose, onConfirm, itemTitle}) => {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [location, setLocation] = useState(itemLocation || '');
 
   // 날짜만 형식 변환 함수 (2023년 12월 25일)
   const formatDateOnly = date => {
@@ -182,28 +180,20 @@ const TradeModal = ({visible, onClose, onConfirm, itemTitle, itemLocation}) => {
 
   // 확인 버튼 핸들러
   const handleConfirm = () => {
-    if (!location.trim()) {
-      Alert.alert('알림', '만남 장소를 입력해주세요.');
-      return;
-    }
-
     onConfirm({
       date: date,
-      location: location,
       formattedDate: formatDate(date),
       time: formatTimeOnly(date), // 시간 정보 추가
     });
 
     // 입력값 초기화
     setDate(new Date());
-    setLocation('');
   };
 
   // 취소 버튼 핸들러
   const handleCancel = () => {
     // 입력값 초기화
     setDate(new Date());
-    setLocation('');
     setShowDatePicker(false);
     setShowTimePicker(false);
     onClose();

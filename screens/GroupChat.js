@@ -9,9 +9,11 @@ import {
   FlatList,
   Alert,
   Image,
+  Dimensions,
+  Keyboard,
 } from 'react-native';
 
-const Container = styled.SafeAreaView`
+const Container = styled(KeyboardAvoidingView)`
   flex: 1;
   background-color: #fff;
 `;
@@ -51,7 +53,7 @@ const MessageText = styled.Text`
   color: ${props => (props.isOwnMessage ? 'white' : '#333')};
 `;
 
-const InputContainer = styled(KeyboardAvoidingView)`
+const InputContainer = styled.View`
   flex-direction: row;
   align-items: center;
   padding: 10px;
@@ -139,11 +141,15 @@ const GroupChat = ({route, navigation}) => {
 
   const flatListRef = useRef(null);
 
+  // 메시지 배열이 변경될 때마다 스크롤 처리
   useEffect(() => {
     if (messages.length > 0 && flatListRef.current) {
-      setTimeout(() => {
+      // 약간의 지연을 주어 렌더링이 완료된 후 스크롤 실행
+      const timeoutId = setTimeout(() => {
         flatListRef.current.scrollToEnd({animated: true});
-      }, 200); // 약간의 지연을 주어 렌더링 완료 후 스크롤되도록 함
+      }, 200);
+
+      return () => clearTimeout(timeoutId); // 컴포넌트 업데이트 시 타임아웃 정리
     }
   }, [messages]);
 
@@ -294,22 +300,57 @@ const GroupChat = ({route, navigation}) => {
 
   const handleWebSocketMessage = data => {
     if (data.type === 'history') {
-      const historyMessages = data.messages.map(msg => ({
-        id: msg.id ? msg.id.toString() : Date.now().toString(),
-        content: msg.content || '',
-        sender_id: msg.sender_id || 'unknown',
-        sender_nickname: msg.sender_nickname || '익명',
-        created_at: msg.timestamp || new Date().toISOString(),
-      }));
+      const historyMessages = data.messages.map(msg => {
+        // 타임스탬프 처리 - 9시간 추가
+        let messageTimestamp;
+        try {
+          if (msg.timestamp) {
+            messageTimestamp = new Date(msg.timestamp);
+            // 한국 시간으로 조정 (UTC+9)
+            messageTimestamp.setHours(messageTimestamp.getHours() + 9);
+          } else {
+            messageTimestamp = new Date();
+          }
+        } catch (e) {
+          console.error('타임스탬프 변환 오류:', e.message);
+          messageTimestamp = new Date();
+        }
+
+        return {
+          id: msg.id ? msg.id.toString() : Date.now().toString(),
+          content: msg.content || '',
+          sender_id: msg.sender_id || 'unknown',
+          sender_nickname: msg.sender_nickname || '익명',
+          created_at: messageTimestamp.toISOString(),
+          rawTimestamp: msg.timestamp, // 원본 타임스탬프도 저장 (디버깅용)
+        };
+      });
 
       setMessages(historyMessages);
     } else if (data.type === 'chat') {
+      // 현재 시간에 9시간을 더함
+      const now = new Date();
+      now.setHours(now.getHours() + 9);
+
+      // 타임스탬프 처리 (있는 경우)
+      let messageTimestamp = now;
+      if (data.timestamp) {
+        try {
+          messageTimestamp = new Date(data.timestamp);
+          // 한국 시간으로 조정 (UTC+9)
+          messageTimestamp.setHours(messageTimestamp.getHours() + 9);
+        } catch (e) {
+          console.error('타임스탬프 변환 오류:', e.message);
+        }
+      }
+
       const newMessage = {
         id: Date.now().toString(),
         content: data.content || '',
         sender_id: data.sender_id || 'unknown',
         sender_nickname: data.sender_nickname || '익명',
-        created_at: new Date().toISOString(),
+        created_at: messageTimestamp.toISOString(),
+        rawTimestamp: data.timestamp, // 원본 타임스탬프도 저장
       };
 
       setMessages(prevMessages => [...prevMessages, newMessage]);
@@ -348,12 +389,17 @@ const GroupChat = ({route, navigation}) => {
 
     const currentUser = userProfiles[currentUserId] || {};
 
+    // 현재 시간에 9시간을 더함
+    const now = new Date();
+    now.setHours(now.getHours() + 9);
+
     const messageData = {
       type: 'chat',
       content: inputMessage,
       chat_id: parseInt(chatroomId, 10),
       sender_id: currentUserId,
       sender_nickname: currentUser.nickname || '익명',
+      timestamp: now.toISOString(), // 9시간 더한 시간 사용
     };
 
     socket.send(JSON.stringify(messageData));
@@ -363,10 +409,23 @@ const GroupChat = ({route, navigation}) => {
       content: inputMessage,
       sender_id: currentUserId,
       sender_nickname: currentUser.nickname || '익명',
-      created_at: new Date().toISOString(),
+      created_at: now.toISOString(), // 9시간 더한 시간 사용
     };
 
-    setMessages(prevMessages => [...prevMessages, newMessage]);
+    // 메시지 추가 후 상태 업데이트 콜백에서 스크롤 수행
+    setMessages(prevMessages => {
+      const updatedMessages = [...prevMessages, newMessage];
+
+      // 메시지 배열이 업데이트된 후 setTimeout을 사용하여 스크롤 실행
+      setTimeout(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({animated: true});
+        }
+      }, 100);
+
+      return updatedMessages;
+    });
+
     setInputMessage('');
   };
 
@@ -389,30 +448,43 @@ const GroupChat = ({route, navigation}) => {
     };
   }, [connectWebSocket]);
 
-  // 상대 시간 포맷팅 함수 추가
+  // 상대 시간 포맷팅 함수 - 이미 한국 시간으로 조정된 날짜 문자열을 처리하는 것으로 가정
   const formatRelativeTime = dateString => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSeconds = Math.floor(diffMs / 1000);
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
 
-    if (diffSeconds < 60) return '방금 전';
-    if (diffMinutes < 60) return `${diffMinutes}분 전`;
-    if (diffHours < 24) return `${diffHours}시간 전`;
-    if (diffDays < 7) return `${diffDays}일 전`;
+      // 유효한 날짜인지 확인
+      if (!date || isNaN(date.getTime())) {
+        return '알 수 없음';
+      }
 
-    // 7일 이상이면 날짜 형식으로 표시
-    return new Intl.DateTimeFormat('ko-KR', {
-      month: 'short',
-      day: 'numeric',
-    }).format(date);
+      const diffMs = now - date;
+      const diffSeconds = Math.floor(diffMs / 1000);
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      const diffHours = Math.floor(diffMinutes / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffSeconds < 60) return '방금 전';
+      if (diffMinutes < 60) return `${diffMinutes}분 전`;
+      if (diffHours < 24) return `${diffHours}시간 전`;
+      if (diffDays < 7) return `${diffDays}일 전`;
+
+      // 7일 이상이면 날짜 형식으로 표시
+      return new Intl.DateTimeFormat('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
+    } catch (error) {
+      console.error('시간 포맷팅 오류:', error);
+      return '--:--';
+    }
   };
 
   return (
-    <Container>
+    <Container
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       <Header>
         <BackButton onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#333" />
@@ -421,18 +493,18 @@ const GroupChat = ({route, navigation}) => {
       </Header>
 
       <MessageList
-        ref={flatListRef} // ref 추가
+        ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={item => item.id}
         inverted={false}
         onContentSizeChange={() =>
           flatListRef.current?.scrollToEnd({animated: false})
-        } // 콘텐츠 크기 변경 시 스크롤
-        onLayout={() => flatListRef.current?.scrollToEnd({animated: false})} // 레이아웃 변경 시 스크롤
+        }
+        onLayout={() => flatListRef.current?.scrollToEnd({animated: false})}
       />
 
-      <InputContainer behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <InputContainer>
         <MessageInput
           value={inputMessage}
           onChangeText={setInputMessage}

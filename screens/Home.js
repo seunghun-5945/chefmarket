@@ -1,4 +1,4 @@
-import React, {useLayoutEffect, useEffect, useState} from 'react';
+import React, {useLayoutEffect, useEffect, useState, useCallback} from 'react';
 import styled from 'styled-components/native';
 import {
   View,
@@ -8,8 +8,11 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  BackHandler,
+  Alert,
+  Platform,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Swiper from 'react-native-web-swiper';
 import News from '../components/News';
@@ -99,6 +102,82 @@ const Home = () => {
       console.log('릴리즈 모드로 실행 중');
     }
   }, []);
+
+  // 뒤로가기 버튼 처리
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          '앱 종료',
+          '앱을 종료하시겠습니까?',
+          [
+            {
+              text: '취소',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: '확인',
+              onPress: () => BackHandler.exitApp(),
+            },
+          ],
+          {cancelable: false},
+        );
+        return true; // 기본 뒤로가기 동작을 방지
+      };
+
+      // Android에서는 BackHandler 이벤트 등록
+      if (Platform.OS === 'android') {
+        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      }
+
+      return () => {
+        if (Platform.OS === 'android') {
+          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        }
+      };
+    }, []),
+  );
+
+  // iOS에서는 네비게이션 이벤트를 통해 처리
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      // 이 화면에서 뒤로가기 제스처를 비활성화
+      const unsubscribe = navigation.addListener('beforeRemove', e => {
+        // 홈 화면에서 뒤로가기 시도 시 기본 동작 방지
+        if (e.data.action.type === 'GO_BACK') {
+          e.preventDefault();
+
+          // 종료 확인 대화상자 표시
+          Alert.alert(
+            '앱 종료',
+            '앱을 종료하시겠습니까?',
+            [
+              {
+                text: '취소',
+                style: 'cancel',
+                onPress: () => {},
+              },
+              {
+                text: '확인',
+                style: 'destructive',
+                // iOS에서는 BackHandler.exitApp()이 작동하지 않기 때문에,
+                // 앱을 백그라운드로 보내는 방식 사용 (완전 종료는 아님)
+                onPress: () => {
+                  // iOS에서는 완전히 앱을 종료할 수 없음
+                  // 홈 화면으로 이동하는 효과를 위해 navigate를 사용
+                  navigation.dispatch(e.data.action);
+                },
+              },
+            ],
+            {cancelable: false},
+          );
+        }
+      });
+
+      return unsubscribe;
+    }
+  }, [navigation]);
 
   // 뉴스 데이터 가져오기
   useEffect(() => {

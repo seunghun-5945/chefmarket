@@ -121,23 +121,31 @@ const ChatItem = ({item, currentUserId, onPress}) => {
 
   // 안전하게 메시지와 날짜 정보 추출
   let lastMessage = '메시지가 없습니다.';
-  let lastMessageDate = formatDate(item.created_at);
+  let lastMessageDate = '날짜 정보 없음';
 
   if (
     item.messages &&
     Array.isArray(item.messages) &&
     item.messages.length > 0
   ) {
+    // 메시지 내용 추출
     lastMessage = item.messages[0].content || '내용 없음';
-    lastMessageDate = formatDate(item.messages[0].created_at);
+
+    // 타임스탬프 추출 및 변환
+    if (item.messages[0].timestamp) {
+      // 타임스탬프가 있으면 이를 사용하여 날짜 포맷팅
+      lastMessageDate = formatDate(item.messages[0].timestamp);
+    } else {
+      // 타임스탬프가 없으면 채팅방 생성 시간 사용
+      lastMessageDate = formatDate(item.created_at);
+    }
   }
 
-  // 날짜 변환 함수
   function formatDate(dateString) {
     try {
       if (!dateString) return '날짜 정보 없음';
 
-      // Date 생성자를 직접 사용하고, 지역 변수로 Date를 선언하지 않음
+      // Date 객체 생성
       const dateObj = new Date(dateString);
 
       // 유효한 날짜인지 확인
@@ -146,14 +154,17 @@ const ChatItem = ({item, currentUserId, onPress}) => {
         return '날짜 정보 없음';
       }
 
+      // 한국 시간으로 조정 (UTC+9)
+      const koreaTimeObj = new Date(dateObj.getTime() + 9 * 60 * 60 * 1000);
+
       const now = new Date();
-      const diffTime = Math.abs(now - dateObj);
+      const diffTime = Math.abs(now - koreaTimeObj);
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       if (diffDays === 0) {
         // 오늘
-        const hours = dateObj.getHours().toString().padStart(2, '0');
-        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+        const hours = koreaTimeObj.getHours().toString().padStart(2, '0');
+        const minutes = koreaTimeObj.getMinutes().toString().padStart(2, '0');
         return `${hours}:${minutes}`;
       } else if (diffDays < 7) {
         // 일주일 이내
@@ -237,7 +248,12 @@ const ChatItem = ({item, currentUserId, onPress}) => {
         </NickNameFrame>
         <LastChatFrame>
           <LastChat>{lastMessage}</LastChat>
-          <ProductInfo>{/* 상품 정보 표시 (주석 처리) */}</ProductInfo>
+          <ProductInfo>
+            <ProductTitle>
+              {item.item.title || '상품 정보 없음'} -{' '}
+              {item.item.value.toLocaleString()}원
+            </ProductTitle>
+          </ProductInfo>
         </LastChatFrame>
       </ExplainFrame>
     </ChatItemContainer>
@@ -289,6 +305,7 @@ const ChatListBox = ({
           console.log('현재 사용자 ID:', userId);
 
           // 채팅방 목록 조회
+          // ChatListBox.js의 fetchChatRooms 함수 내부에서 API 응답 받은 후
           const chatResponse = await axios.get(
             `http://3.34.59.23/api/v1/chat/chats?user_id=${userId}`,
             {
@@ -296,11 +313,25 @@ const ChatListBox = ({
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/json',
               },
-              timeout: 10000, // 10초 타임아웃 설정
+              timeout: 10000,
             },
           );
 
-          console.log('채팅방 조회 결과:', chatResponse.data);
+          // 디버깅을 위해 채팅방 데이터 구조 콘솔에 출력
+          console.log(
+            '채팅방 데이터 구조:',
+            JSON.stringify(chatResponse.data[0], null, 2),
+          );
+
+          // 각 채팅방의 메시지 데이터 확인
+          chatResponse.data.forEach((room, index) => {
+            console.log(
+              `채팅방 ${index + 1} 메시지:`,
+              room.messages && room.messages.length > 0
+                ? room.messages[0]
+                : '메시지 없음',
+            );
+          });
 
           if (Array.isArray(chatResponse.data)) {
             setChatRooms(chatResponse.data);
