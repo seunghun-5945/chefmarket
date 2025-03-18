@@ -2,7 +2,8 @@ import React, {useEffect, useState} from 'react';
 import styled from 'styled-components/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Text, FlatList, View} from 'react-native';
+import {Text, FlatList, View, Alert, TouchableOpacity} from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // 아이콘 추가
 
 const Container = styled.View`
   flex: 1;
@@ -17,10 +18,21 @@ const SaleItem = styled.View`
   elevation: 2;
 `;
 
+const ItemHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+`;
+
 const ItemTitle = styled.Text`
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 4px;
+  flex: 1;
+`;
+
+const DeleteButton = styled.TouchableOpacity`
+  padding: 5px;
 `;
 
 const ItemDetail = styled.Text`
@@ -49,10 +61,33 @@ const StatusText = styled.Text`
   font-size: 12px;
 `;
 
-const MyRecipes = () => {
+const MySales = () => {
   const [userData, setUserData] = useState(null);
   const [mySales, setMySales] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchSalesData = async userId => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      const response = await axios.get('http://3.34.59.23/api/v1/sales', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // 현재 사용자가 판매자인 항목만 필터링
+      if (userId) {
+        const filteredSales = response.data.filter(
+          item => item.seller_id === userId,
+        );
+        setMySales(filteredSales);
+      }
+    } catch (error) {
+      console.log('판매 데이터 조회 에러:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -71,29 +106,6 @@ const MyRecipes = () => {
       }
     };
 
-    const fetchSalesData = async userId => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        const response = await axios.get('http://3.34.59.23/api/v1/sales', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        // 현재 사용자가 판매자인 항목만 필터링
-        if (userId) {
-          const filteredSales = response.data.filter(
-            item => item.seller_id === userId,
-          );
-          setMySales(filteredSales);
-        }
-      } catch (error) {
-        console.log('판매 데이터 조회 에러:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const loadData = async () => {
       const userId = await fetchUserData();
       await fetchSalesData(userId);
@@ -102,9 +114,48 @@ const MyRecipes = () => {
     loadData();
   }, []);
 
+  // 상품 삭제 함수
+  const handleDeleteSale = async saleId => {
+    // 삭제 확인 다이얼로그
+    Alert.alert('상품 삭제', '정말 이 상품을 삭제하시겠습니까?', [
+      {
+        text: '취소',
+        style: 'cancel',
+      },
+      {
+        text: '삭제',
+        onPress: async () => {
+          try {
+            const token = await AsyncStorage.getItem('accessToken');
+            await axios.delete(`http://3.34.59.23/api/v1/sales/${saleId}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            // 삭제 성공 후 목록 새로고침
+            setMySales(prevSales =>
+              prevSales.filter(item => item.id !== saleId),
+            );
+            Alert.alert('성공', '상품이 삭제되었습니다.');
+          } catch (error) {
+            console.error('상품 삭제 에러:', error);
+            Alert.alert('오류', '상품 삭제 중 문제가 발생했습니다.');
+          }
+        },
+        style: 'destructive',
+      },
+    ]);
+  };
+
   const renderSaleItem = ({item}) => (
     <SaleItem>
-      <ItemTitle>{item.title}</ItemTitle>
+      <ItemHeader>
+        <ItemTitle>{item.title}</ItemTitle>
+        <DeleteButton onPress={() => handleDeleteSale(item.id)}>
+          <Icon name="delete" size={24} color="gray" />
+        </DeleteButton>
+      </ItemHeader>
       <ItemDetail>카테고리: {item.category}</ItemDetail>
       <ItemDetail>
         유통기한: {new Date(item.expiry_date).toLocaleDateString()}
@@ -146,4 +197,4 @@ const MyRecipes = () => {
   );
 };
 
-export default MyRecipes;
+export default MySales;

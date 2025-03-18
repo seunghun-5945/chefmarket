@@ -1,5 +1,13 @@
 import styled from 'styled-components/native';
-import {SafeAreaView, Image, Text} from 'react-native';
+import {
+  SafeAreaView,
+  Image,
+  Text,
+  View,
+  StyleSheet,
+  Dimensions,
+  Share,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/SimpleLineIcons';
 import Icon2 from 'react-native-vector-icons/AntDesign';
 import {useEffect, useState} from 'react';
@@ -7,6 +15,10 @@ import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert} from 'react-native';
+import Swiper from 'react-native-web-swiper';
+
+// 화면 크기 구하기
+const {width} = Dimensions.get('window');
 
 const SafeContainer = styled.SafeAreaView`
   flex: 1;
@@ -22,9 +34,19 @@ const ScrollContainer = styled.ScrollView`
   flex: 1;
 `;
 
+// 이미지 프레임 크기 유지하되 Swiper를 위한 배경색 추가
 const ImageFrame = styled.View`
   width: 100%;
   aspect-ratio: 1;
+  background-color: #f0f0f0;
+`;
+
+// 개별 슬라이드를 위한 컴포넌트
+const SwiperSlide = styled.View`
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
 `;
 
 const ButtonContainer = styled.View`
@@ -125,7 +147,6 @@ const RequesterInfoFrame = styled.View`
 const RequesterProfileImage = styled.View`
   width: 40px;
   height: 40px;
-  border: 1px solid red;
   border-radius: 50px;
 `;
 
@@ -135,17 +156,78 @@ const ContentFrame = styled.View`
   margin-bottom: 100px;
 `;
 
+// 페이지네이션 인디케이터 스타일
+const styles = StyleSheet.create({
+  // 커스텀 페이지네이션 스타일
+  customPaginationContainer: {
+    position: 'absolute',
+    bottom: 10,
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  customPagination: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  customPaginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  customPaginationDotActive: {
+    backgroundColor: 'white',
+  },
+  customPaginationDotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+});
+
 const DetailProduct = ({route}) => {
   // route.params에서 productData를 추출
   const product = route.params?.productData;
   const [isLiked, setIsLiked] = useState(false);
   const [address, setAddress] = useState('');
   const [isOwnProduct, setIsOwnProduct] = useState(false); // 자신의 상품인지 상태 추가
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // 현재 이미지 인덱스
+  const [sellerInfo, setSellerInfo] = useState(null); // 판매자 정보 상태 추가
   const navigation = useNavigation();
 
   useEffect(() => {
     console.log(product);
+
+    // 판매자 ID가 있으면 판매자 정보 가져오기
+    if (product.seller_id) {
+      fetchSellerInfo(product.seller_id);
+    }
   }, []);
+
+  // 판매자 정보를 가져오는 함수
+  const fetchSellerInfo = async sellerId => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) return;
+
+      const response = await axios.get(
+        `http://3.34.59.23/api/v1/users/${sellerId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        },
+      );
+
+      setSellerInfo(response.data);
+      console.log('판매자 정보:', response.data);
+    } catch (error) {
+      console.error('판매자 정보 가져오기 실패:', error);
+    }
+  };
 
   // 컴포넌트 마운트 시 자신의 상품인지 확인
   useEffect(() => {
@@ -310,16 +392,57 @@ const DetailProduct = ({route}) => {
     }
   };
 
+  // 이미지 배열 확인 및 처리
+  const hasMultipleImages = product.images && product.images.length > 1;
+
   return (
     <SafeContainer>
       <Container>
         <ScrollContainer>
           <ImageFrame>
-            <Image
-              source={{uri: product.images[0]}}
-              style={{width: '100%', height: '100%'}}
-              resizeMode="cover"
-            />
+            {hasMultipleImages ? (
+              <>
+                <Swiper
+                  from={0}
+                  loop
+                  timeout={5}
+                  controlsEnabled={false} // 기본 컨트롤 비활성화
+                  onIndexChanged={index => setCurrentImageIndex(index)}
+                  key={`swiper-${product.images.length}`}>
+                  {product.images.map((imageUrl, index) => (
+                    <SwiperSlide key={`slide-${index}`}>
+                      <Image
+                        source={{uri: imageUrl}}
+                        style={{width: '100%', height: '100%'}}
+                        resizeMode="cover"
+                      />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+                {/* 커스텀 페이지네이션 인디케이터 */}
+                <View style={styles.customPaginationContainer}>
+                  <View style={styles.customPagination}>
+                    {product.images.map((_, index) => (
+                      <View
+                        key={`dot-${index}`}
+                        style={[
+                          styles.customPaginationDot,
+                          currentImageIndex === index
+                            ? styles.customPaginationDotActive
+                            : styles.customPaginationDotInactive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </>
+            ) : (
+              <Image
+                source={{uri: product.images[0]}}
+                style={{width: '100%', height: '100%'}}
+                resizeMode="cover"
+              />
+            )}
           </ImageFrame>
           <TitleFrame>
             <ExplainFrame>
@@ -352,15 +475,39 @@ const DetailProduct = ({route}) => {
               <Text>공유하기</Text>
             </ShareButton>
           </ShareFrame>
+
+          {/* 판매자 정보 표시 부분 */}
           <RequesterInfoFrame>
             <RequesterProfileImage>
-              <Image
-                source={{uri: product.user?.profile_image}}
-                style={{width: '100%', height: '100%', borderRadius: 20}}
-                resizeMode="cover"
-              />
+              {sellerInfo && sellerInfo.profile_image_url ? (
+                // 판매자 정보에 프로필 이미지가 있는 경우
+                <Image
+                  source={{uri: sellerInfo.profile_image_url}}
+                  style={{width: '100%', height: '100%', borderRadius: 20}}
+                  resizeMode="cover"
+                />
+              ) : product.user?.profile_image_url ? (
+                // 상품 정보에 포함된 사용자 프로필 이미지가 있는 경우
+                <Image
+                  source={{uri: product.user.profile_image_url}}
+                  style={{width: '100%', height: '100%', borderRadius: 20}}
+                  resizeMode="cover"
+                />
+              ) : (
+                // 두 경우 모두 이미지가 없는 경우 기본 이미지 사용
+                <Image
+                  source={require('../assets/testImage/chefLogo.png')}
+                  style={{width: '100%', height: '100%', borderRadius: 20}}
+                  resizeMode="cover"
+                />
+              )}
             </RequesterProfileImage>
-            <Text>{product.user?.nickname || '판매자'}</Text>
+            {/* 판매자 정보 표시 */}
+            <Text>
+              {sellerInfo
+                ? sellerInfo.nickname
+                : product.user?.nickname || '판매자'}
+            </Text>
             {product.expiry_date && (
               <Text>유통기한: {product.expiry_date.split('T')[0]}</Text>
             )}
@@ -374,7 +521,7 @@ const DetailProduct = ({route}) => {
             // 자신의 상품일 경우 비활성화된 버튼 표시
             <Button
               style={{backgroundColor: '#cccccc'}} // 회색으로 변경
-              onPress={() => Alert.alert('알림', ' 상품입니다.')}>
+              onPress={() => Alert.alert('알림', '내가 올린 상품입니다.')}>
               <Text style={{color: 'white', fontWeight: '500'}}>
                 내가 올린 상품
               </Text>

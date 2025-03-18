@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   ScrollView,
   Text,
@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Share,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -190,7 +191,7 @@ const BottomContainer = styled.View`
   background-color: white;
 `;
 
-const ShareButton = styled.TouchableOpacity`
+const ChatButton = styled.TouchableOpacity`
   flex: 1;
   flex-direction: row;
   justify-content: center;
@@ -201,7 +202,7 @@ const ShareButton = styled.TouchableOpacity`
   margin-right: 10px;
 `;
 
-const ShareButtonText = styled.Text`
+const ChatButtonText = styled.Text`
   font-size: 16px;
   color: #333;
   margin-left: 5px;
@@ -271,6 +272,34 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#999',
   },
+
+  customPaginationContainer: {
+    position: 'absolute',
+    bottom: 10,
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  customPagination: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  customPaginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  customPaginationDotActive: {
+    backgroundColor: 'white',
+  },
+  customPaginationDotInactive: {
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  // 기타 스타일들...
 });
 
 const GroupPurchaseDetail = ({route, navigation}) => {
@@ -278,9 +307,22 @@ const GroupPurchaseDetail = ({route, navigation}) => {
   const [detailData, setDetailData] = useState(item || null);
   const [loading, setLoading] = useState(!item);
   const [timeRemaining, setTimeRemaining] = useState({text: '', urgent: false});
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 디버깅 상태 추가
   const [debugMode, setDebugMode] = useState(__DEV__); // 개발 모드에서만 디버깅 정보 표시
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadDetailData();
+    } catch (error) {
+      console.error('새로고침 중 오류:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!item) {
@@ -328,19 +370,20 @@ const GroupPurchaseDetail = ({route, navigation}) => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       const response = await axios.get(
-        `http://3.34.59.23/api/v1/group-purchases/${itemId}`,
+        `http://3.34.59.23/api/v1/group-purchases/${itemId}`, // 엔드포인트 수정
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
           },
         },
       );
 
-      // API 응답을 앱에서 사용하는 형식으로 변환
+      // API 응답 데이터 구조에 맞게 포맷팅
       const formattedData = formatApiData(response.data);
       setDetailData(formattedData);
     } catch (error) {
-      console.log('상세 정보 로드 실패:', error);
+      console.error('상세 정보 로드 실패:', error);
       Alert.alert(
         '데이터 로드 실패',
         '정보를 불러오는데 실패했습니다. 다시 시도해주세요.',
@@ -351,19 +394,16 @@ const GroupPurchaseDetail = ({route, navigation}) => {
     }
   };
 
-  // formatApiData 함수 수정 - images 배열에서 image_url 추출
   const formatApiData = apiResponse => {
-    // API 응답 구조에 맞게 매핑
     const now = new Date();
     const endDate = new Date(apiResponse.end_date);
     const remainingTime = endDate - now;
 
-    // 상태 결정 (마감 시간 기반)
+    // 상태 결정
     let status;
     if (apiResponse.status === 'closed' || remainingTime <= 0) {
       status = '마감';
     } else if (remainingTime <= 24 * 60 * 60 * 1000) {
-      // 24시간 이내
       status = '마감임박';
     } else {
       status = '모집중';
@@ -372,34 +412,16 @@ const GroupPurchaseDetail = ({route, navigation}) => {
     // 할인율 계산
     const originalPrice = apiResponse.original_price;
     const discountPrice = apiResponse.price;
-    // 원가가 있고 할인가격보다 크면 할인율 계산, 아니면 0%
     const discountRate =
       originalPrice && originalPrice > discountPrice
         ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100)
         : 0;
 
-    // 모든 이미지 URL 배열 생성
-    let imageUrls = [];
-
-    // 이미지 배열이 있으면 그 URL들을 사용 (각 객체의 image_url 속성을 추출)
-    if (apiResponse.images && apiResponse.images.length > 0) {
-      imageUrls = apiResponse.images.map(img => img.image_url);
-      console.log('이미지 URL 배열:', imageUrls); // 디버깅용 로그
-    }
-    // 없으면 기본 이미지 URL을 배열에 추가
-    else if (apiResponse.image_url) {
-      imageUrls.push(apiResponse.image_url);
-    }
-    // 둘 다 없으면 플레이스홀더 이미지
-    else {
-      imageUrls.push('https://via.placeholder.com/500?text=No+Image');
-    }
-
-    // 기본 이미지 URL (첫 번째 이미지 또는 대체 이미지)
-    const imageUrl =
-      imageUrls.length > 0
-        ? imageUrls[0]
-        : 'https://via.placeholder.com/500?text=No+Image';
+    // 이미지 URL 처리
+    const imageUrls =
+      apiResponse.images.length > 0
+        ? apiResponse.images.map(img => img.image_url)
+        : ['https://via.placeholder.com/500?text=No+Image'];
 
     return {
       id: apiResponse.id.toString(),
@@ -408,19 +430,18 @@ const GroupPurchaseDetail = ({route, navigation}) => {
       originalPrice: originalPrice,
       discountPrice: discountPrice,
       discountRate: discountRate,
-      image: imageUrl,
-      imageUrls: imageUrls, // 모든 이미지 URL 배열
+      image: imageUrls[0],
+      imageUrls: imageUrls,
       participants: apiResponse.current_participants || 0,
       maxParticipants: apiResponse.max_participants || 5,
       status: status,
       distance: apiResponse.distance || 0,
       location: apiResponse.location || '정보 없음',
-      category: apiResponse.category || '기타', // API에서 제공하는 카테고리 사용
+      category: apiResponse.category || '기타',
       endDate: apiResponse.end_date,
       organizer: apiResponse.organizer_name || '익명',
     };
   };
-
   const calculateTimeRemaining = () => {
     if (!detailData) return;
 
@@ -491,27 +512,52 @@ const GroupPurchaseDetail = ({route, navigation}) => {
           text: '참여하기',
           onPress: async () => {
             try {
-              // 참여 로직 구현
               setLoading(true);
               const token = await AsyncStorage.getItem('accessToken');
 
-              // API 요청으로 참여 처리
-              await axios.post(
-                `http://3.34.59.23/api/v1/group-purchases/${detailData.id}/participate`,
-                {},
+              console.log('토큰:', token);
+              console.log('그룹 구매 ID:', detailData.id);
+
+              const response = await axios.post(
+                `http://3.34.59.23/api/v1/group-purchases/${detailData.id}/join`,
+                {}, // 빈 객체
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
+                    Accept: 'application/json',
                   },
                 },
               );
+
+              console.log('참여 응답:', response.data);
 
               // 참여 성공 시 데이터 리로드
               await loadDetailData();
               Alert.alert('성공', '공동구매 참여가 완료되었습니다.');
             } catch (error) {
-              console.error('참여 실패:', error);
+              console.error('참여 실패 전체 에러:', error);
+
+              if (error.response && error.response.status === 400) {
+                // 이미 참여한 경우 특별 처리
+                Alert.alert('알림', '이미 참여한 그룹 구매입니다');
+                return;
+              }
+
+              // 보다 상세한 에러 로깅
+              if (error.response) {
+                // 서버가 응답을 보냈지만 2xx 범위를 벗어난 상태 코드
+                console.error('에러 응답 데이터:', error.response.data);
+                console.error('에러 응답 상태:', error.response.status);
+                console.error('에러 응답 헤더:', error.response.headers);
+              } else if (error.request) {
+                // 요청은 보내졌지만 응답을 받지 못함
+                console.error('에러 요청:', error.request);
+              } else {
+                // 오류를 발생시킨 요청 설정
+                console.error('에러 메시지:', error.message);
+              }
+
               let errorMessage = '참여 처리 중 오류가 발생했습니다.';
 
               if (error.response && error.response.data) {
@@ -567,6 +613,45 @@ const GroupPurchaseDetail = ({route, navigation}) => {
   // 이미지 URL 배열이 있는지와 길이가 0보다 큰지 확인
   const hasImages = detailData.imageUrls && detailData.imageUrls.length > 0;
 
+  const handleChatButton = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다');
+      }
+
+      const groupPurchaseId = parseInt(detailData.id);
+      if (isNaN(groupPurchaseId)) {
+        throw new Error('유효하지 않은 상품 ID');
+      }
+
+      const response = await axios.post(
+        `http://3.34.59.23/api/v1/group-purchases/chatrooms/?group_purchase_id=${groupPurchaseId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        },
+      );
+      console.log('방 생성됨', response.data);
+
+      // 생성된 채팅방으로 네비게이션
+      navigation.navigate('GroupChat', {
+        chatroomId: response.data.chatroom_id,
+        groupPurchaseTitle: detailData.title,
+      });
+    } catch (error) {
+      console.error('채팅방 생성 실패:', error);
+      Alert.alert('오류', '채팅방을 생성할 수 없습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Container>
       {/* 헤더 */}
@@ -582,34 +667,56 @@ const GroupPurchaseDetail = ({route, navigation}) => {
       </HeaderContainer>
 
       {/* 콘텐츠 */}
-      <ContentContainer>
+      <ContentContainer
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#ff6b6b']}
+            progressViewOffset={20} // 선택적으로 추가
+          />
+        }>
         {/* 이미지 캐러셀 */}
         <ImageContainer>
           {hasImages ? (
-            <Swiper
-              from={0}
-              loop
-              timeout={5}
-              controlsEnabled={true}
-              controlsProps={{
-                dotsTouchable: true,
-                prevPos: false,
-                nextPos: false,
-                dotActiveStyle: {backgroundColor: 'white'},
-              }}
-              key={`swiper-${detailData.imageUrls.length}`}
-              renderPagination={renderPagination}>
-              {detailData.imageUrls.map((imageUrl, index) => (
-                <SwiperSlide key={`slide-${index}`}>
-                  <ProductImage source={{uri: imageUrl}} resizeMode="cover" />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <>
+              <Swiper
+                from={0}
+                loop
+                timeout={5}
+                controlsEnabled={false} // 기본 컨트롤 비활성화
+                key={`swiper-${detailData.imageUrls.length}`}
+                onIndexChanged={index => setCurrentImageIndex(index)}>
+                {detailData.imageUrls.map((imageUrl, index) => (
+                  <SwiperSlide key={`slide-${index}`}>
+                    <ProductImage source={{uri: imageUrl}} resizeMode="cover" />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+
+              {/* 커스텀 페이지네이션 인디케이터 */}
+              {detailData.imageUrls.length > 1 && (
+                <View style={styles.customPaginationContainer}>
+                  <View style={styles.customPagination}>
+                    {detailData.imageUrls.map((_, index) => (
+                      <View
+                        key={`dot-${index}`}
+                        style={[
+                          styles.customPaginationDot,
+                          currentImageIndex === index
+                            ? styles.customPaginationDotActive
+                            : styles.customPaginationDotInactive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
           ) : (
             <ProductImage source={{uri: detailData.image}} resizeMode="cover" />
           )}
         </ImageContainer>
-
         {/* 상태 표시 */}
         <View
           style={{
@@ -630,7 +737,6 @@ const GroupPurchaseDetail = ({route, navigation}) => {
             {detailData.status}
           </Text>
         </View>
-
         {/* 제목 및 가격 */}
         <Title>{detailData.title}</Title>
         <PriceContainer>
@@ -646,7 +752,6 @@ const GroupPurchaseDetail = ({route, navigation}) => {
             <DiscountRate>{detailData.discountRate}% 할인</DiscountRate>
           )}
         </PriceContainer>
-
         {/* 참여 정보 */}
         <ParticipantContainer>
           <SectionTitle>참여 현황</SectionTitle>
@@ -671,7 +776,6 @@ const GroupPurchaseDetail = ({route, navigation}) => {
             </TimeRemainingText>
           </TimeRemainingContainer>
         </ParticipantContainer>
-
         {/* 상품 정보 */}
         <InfoSection>
           <SectionTitle>상품 정보</SectionTitle>
@@ -684,7 +788,6 @@ const GroupPurchaseDetail = ({route, navigation}) => {
             <InfoValue>{detailData.organizer}</InfoValue>
           </InfoRow>
         </InfoSection>
-
         {/* 상품 설명 */}
         <InfoSection>
           <SectionTitle>상품 설명</SectionTitle>
@@ -694,10 +797,10 @@ const GroupPurchaseDetail = ({route, navigation}) => {
 
       {/* 하단 버튼 */}
       <BottomContainer>
-        <ShareButton onPress={handleShare}>
-          <Icon name="share" size={20} color="#333" />
-          <ShareButtonText>공유하기</ShareButtonText>
-        </ShareButton>
+        <ChatButton onPress={handleChatButton}>
+          <Icon name="chat" size={20} color="#333" />
+          <ChatButtonText>채팅하기</ChatButtonText>
+        </ChatButton>
         <ParticipateButton
           disabled={detailData.status === '마감'}
           onPress={handleParticipate}>

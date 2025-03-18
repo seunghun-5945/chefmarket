@@ -19,6 +19,7 @@ import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icon2 from 'react-native-vector-icons/AntDesign';
 import Icon3 from 'react-native-vector-icons/Fontisto';
+import RecipeMainSkeleton from '../components/RecipeMainSkeleton';
 
 const Container = styled.View`
   flex: 1;
@@ -206,6 +207,9 @@ const RecipeMain = () => {
   const [searchText, setSearchText] = useState('');
   const [allRecipes, setAllRecipes] = useState([]);
   const [categorizedRecipes, setCategorizedRecipes] = useState({});
+  const [lowCalorieRecipes, setLowCalorieRecipes] = useState({});
+  // 새로운 상태 - 스켈레톤 표시를 위한 초기 로딩 상태
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const navigation = useNavigation();
 
@@ -220,10 +224,12 @@ const RecipeMain = () => {
     }
   }, [permissions, navigation]);
 
-  // 레시피 선택 핸들러
+  // handleRecipeSelect 함수를 수정합니다
   const handleRecipeSelect = useCallback(
     recipeItem => {
-      navigation.navigate('DetailRecipe', {recipeData: recipeItem});
+      // recipeItem이 recipe 속성을 가지고 있는지 확인
+      const recipeData = recipeItem.recipe ? recipeItem.recipe : recipeItem;
+      navigation.navigate('DetailRecipe', {recipeData: recipeData});
     },
     [navigation],
   );
@@ -300,8 +306,16 @@ const RecipeMain = () => {
         },
       });
 
+      const allRecipes = Object.values(response.data).flat();
+
+      const lowCalorieRecipes = allRecipes.filter(
+        recipe => recipe.calories >= 10 && recipe.calories <= 100,
+      );
+
       setAllRecipes(response.data);
       categorizeRecipes(response.data);
+      setLowCalorieRecipes(lowCalorieRecipes); // 저칼로리 섹션을 위한 상태 추가
+      console.log(lowCalorieRecipes);
       setLoading(false);
       return response.data;
     } catch (error) {
@@ -386,6 +400,7 @@ const RecipeMain = () => {
           setRecipesData([]); // 더미 데이터가 정의되지 않았으므로 빈 배열 사용
           setError(null);
           setLoading(false);
+          setInitialLoading(false); // 초기 로딩 완료
           return;
         }
 
@@ -407,6 +422,7 @@ const RecipeMain = () => {
         setError(error);
       } finally {
         setLoading(false);
+        setInitialLoading(false); // 초기 로딩 완료
       }
     };
 
@@ -418,14 +434,12 @@ const RecipeMain = () => {
     fetchAllRecipes();
   }, [fetchAllRecipes]);
 
-  if (loading) {
-    return (
-      <LoadingContainer>
-        <ActivityIndicator size="large" color="#FF6B6B" />
-      </LoadingContainer>
-    );
+  // 초기 로딩 중이면 스켈레톤 UI 표시
+  if (initialLoading) {
+    return <RecipeMainSkeleton />;
   }
 
+  // 로딩 중에는 스켈레톤 렌더링 대신 실제 UI 렌더링
   return (
     <Container>
       <SearchBar>
@@ -450,7 +464,12 @@ const RecipeMain = () => {
         </HeaderSection>
 
         <MainSection>
-          {recipesData && recipesData.length > 0 ? (
+          {loading ? (
+            // 데이터 로딩 중에는 레시피 카드 영역 스켈레톤 표시
+            <RecipeCard style={{backgroundColor: '#f5f5f5'}}>
+              <View style={{height: 280}} />
+            </RecipeCard>
+          ) : recipesData && recipesData.length > 0 ? (
             <RecipeCard>
               <Swiper
                 from={0}
@@ -546,6 +565,101 @@ const RecipeMain = () => {
               <SeeAllText>전체보기</SeeAllText>
             </SeeAllButton>
           </CategoryHeader>
+
+          {/* 스크롤 가능한 영역 높이 확보 */}
+          <View style={{height: 220, marginBottom: 20}}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingHorizontal: 10}}>
+              {loading ? (
+                // 로딩 중이면 스켈레톤 카드 표시
+                [1, 2, 3].map(item => (
+                  <View
+                    key={item}
+                    style={{
+                      width: 160,
+                      height: 200,
+                      marginRight: 12,
+                      borderRadius: 10,
+                      backgroundColor: '#f5f5f5',
+                    }}
+                  />
+                ))
+              ) : lowCalorieRecipes.length > 0 ? (
+                lowCalorieRecipes.map(recipe => (
+                  <TouchableOpacity
+                    key={recipe.id}
+                    onPress={() => handleRecipeSelect(recipe)}
+                    style={{
+                      width: 160,
+                      height: 200,
+                      marginRight: 12,
+                      borderRadius: 10,
+                      backgroundColor: 'white',
+                      shadowColor: '#000',
+                      shadowOffset: {width: 0, height: 2},
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 3,
+                      overflow: 'hidden',
+                      borderWidth: 1,
+                      borderColor: '#eee',
+                    }}>
+                    <Image
+                      source={{
+                        uri:
+                          recipe.image_large ||
+                          'https://via.placeholder.com/400',
+                      }}
+                      style={{
+                        width: '100%',
+                        height: 120,
+                        borderTopLeftRadius: 10,
+                        borderTopRightRadius: 10,
+                      }}
+                      resizeMode="cover"
+                    />
+                    <View style={{padding: 10}}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 'bold',
+                          marginBottom: 4,
+                        }}>
+                        {recipe.name}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                        }}>
+                        <Text style={{fontSize: 12, color: '#777'}}>
+                          {recipe.calories} kcal
+                        </Text>
+                        <Text style={{fontSize: 12, color: '#777'}}>
+                          {recipe.category}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View
+                  style={{
+                    width: '100%',
+                    height: 180,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <Text style={{textAlign: 'center'}}>
+                    해당 조건의 레시피가 없습니다.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
         </CategorySection>
       </ScrollView>
     </Container>

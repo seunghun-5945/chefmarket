@@ -9,7 +9,7 @@ const LEVELS = [
     emoji: '🌱',
     minPoints: 0,
     maxPoints: 49,
-    color: '#4CAF50', // 녹색
+    color: '#FEE500', // 녹색
   },
   {
     name: '집밥달인',
@@ -23,14 +23,14 @@ const LEVELS = [
     emoji: '👨🏻‍🍳',
     minPoints: 70,
     maxPoints: 89,
-    color: '#FF9800', // 주황색
+    color: '#64C964', // 주황색
   },
   {
     name: '셰프',
     emoji: '🏆',
     minPoints: 90,
     maxPoints: Infinity,
-    color: '#2196F3', // 파란색
+    color: '#D9534F', // 파란색
   },
 ];
 

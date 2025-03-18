@@ -1,4 +1,3 @@
-// UploadIngredient.jsx
 import React from 'react';
 import {Text} from 'react-native-gesture-handler';
 import styled from 'styled-components/native';
@@ -54,7 +53,7 @@ const UploadIngredient = () => {
         </IconBoxTextFrame>
       </IconBox>
 
-      <IconBox>
+      <IconBox onPress={() => navigation.navigate('ManualIngredientInput')}>
         <IconBoxIconFrame>
           <Icon2 name="keyboard-o" size={50} color="#666" />
         </IconBoxIconFrame>

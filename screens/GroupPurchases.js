@@ -154,7 +154,6 @@ const ParticipantText = styled.Text`
 
 const StatusContainer = styled.View`
   position: absolute;
-  top: 30px;
   right: 10px;
   background-color: ${props =>
     props.status === '모집중'

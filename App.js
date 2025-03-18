@@ -22,6 +22,7 @@ import GroupPurchases from './screens/GroupPurchases';
 import RegistGroupPurchases from './screens/RegistGroupPurchases';
 import DetailProduct from './screens/DetailProduct';
 import UploadIngredient from './screens/UploadIngredient';
+import ManualIngredientInput from './screens/ManualIngredientInput';
 import MyIngredient from './screens/MyIngredient';
 import MyRecipes from './screens/MyRecipes';
 import MySales from './screens/Mysales';
@@ -30,6 +31,7 @@ import SearchRecipes from './screens/SearchRecipes';
 import RatingRecipes from './screens/RatingRecipes';
 import SplashScreen from 'react-native-splash-screen';
 import GroupPurchaseDetail from './screens/GroupPurchasesDetail';
+import GroupChat from './screens/GroupChat';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -213,6 +215,13 @@ const App = () => {
           }}
         />
         <Stack.Screen
+          name="ManualIngredientInput"
+          component={ManualIngredientInput}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
           name="MyIngredient"
           component={MyIngredient}
           options={{
@@ -278,6 +287,13 @@ const App = () => {
         <Stack.Screen
           name="RegistGroupPurchases"
           component={RegistGroupPurchases}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="GroupChat"
+          component={GroupChat}
           options={{
             headerLeft: () => null,
           }}

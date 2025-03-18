@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import styled from 'styled-components/native';
 import {
   TouchableOpacity,
@@ -56,8 +56,6 @@ const NickName = styled.Text`
   font-size: 16px;
 `;
 
-// Date 스타일 컴포넌트의 이름 변경 - 이 부분이 중요합니다!
-// Date -> DateText로 변경
 const DateText = styled.Text`
   font-size: 12px;
   margin-left: 10px;
@@ -110,7 +108,142 @@ const LoadingContainer = styled.View`
   align-items: center;
 `;
 
-// props로 refreshing과 onRefresh를 받도록 수정
+const userProfileCache = {};
+
+// ChatItem 컴포넌트 분리 (각 채팅방 항목)
+const ChatItem = ({item, currentUserId, onPress}) => {
+  const [otherUserDetails, setOtherUserDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // 현재 사용자가 구매자인지 판매자인지 확인
+  const isBuyer = item.buyer.id === currentUserId;
+  const otherUser = isBuyer ? item.seller : item.buyer;
+
+  // 안전하게 메시지와 날짜 정보 추출
+  let lastMessage = '메시지가 없습니다.';
+  let lastMessageDate = formatDate(item.created_at);
+
+  if (
+    item.messages &&
+    Array.isArray(item.messages) &&
+    item.messages.length > 0
+  ) {
+    lastMessage = item.messages[0].content || '내용 없음';
+    lastMessageDate = formatDate(item.messages[0].created_at);
+  }
+
+  // 날짜 변환 함수
+  function formatDate(dateString) {
+    try {
+      if (!dateString) return '날짜 정보 없음';
+
+      // Date 생성자를 직접 사용하고, 지역 변수로 Date를 선언하지 않음
+      const dateObj = new Date(dateString);
+
+      // 유효한 날짜인지 확인
+      if (isNaN(dateObj.getTime())) {
+        console.log('유효하지 않은 날짜:', dateString);
+        return '날짜 정보 없음';
+      }
+
+      const now = new Date();
+      const diffTime = Math.abs(now - dateObj);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        // 오늘
+        const hours = dateObj.getHours().toString().padStart(2, '0');
+        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } else if (diffDays < 7) {
+        // 일주일 이내
+        return `${diffDays}일 전`;
+      } else if (diffDays < 30) {
+        // 한 달 이내
+        return `${Math.floor(diffDays / 7)}주 전`;
+      } else if (diffDays < 365) {
+        // 1년 이내
+        return `${Math.floor(diffDays / 30)}달 전`;
+      } else {
+        // 1년 이상
+        return `${Math.floor(diffDays / 365)}년 전`;
+      }
+    } catch (error) {
+      console.error('날짜 변환 오류:', error);
+      return '날짜 정보 없음';
+    }
+  }
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      // 캐시에 사용자 정보가 있으면 사용
+      if (userProfileCache[otherUser.id]) {
+        setOtherUserDetails(userProfileCache[otherUser.id]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const response = await axios.get(
+          `http://3.34.59.23/api/v1/users/${otherUser.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+          },
+        );
+
+        // 응답 데이터 캐싱 및 상태 업데이트
+        userProfileCache[otherUser.id] = response.data;
+        setOtherUserDetails(response.data);
+      } catch (error) {
+        console.error('사용자 상세 정보 가져오기 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserDetails();
+  }, [otherUser.id]);
+
+  // 프로필 이미지 URL 결정
+  const profileImageUrl = otherUserDetails?.profile_image_url || null;
+
+  // 이미지 소스 설정 - 프로필 이미지가 있으면 사용, 없으면 기본 이미지
+  const imageSource = profileImageUrl
+    ? {uri: profileImageUrl}
+    : require('../assets/testImage/chefLogo.png'); // 기본 이미지 경로
+
+  return (
+    <ChatItemContainer onPress={() => onPress(item)}>
+      <IconFrame>
+        {loading ? (
+          <ActivityIndicator size="small" color="lightgray" />
+        ) : (
+          <ProfileImage
+            source={imageSource}
+            defaultSource={require('../assets/testImage/chefLogo.png')}
+          />
+        )}
+      </IconFrame>
+      <ExplainFrame>
+        <NickNameFrame>
+          <NickName>
+            {otherUserDetails?.nickname || otherUser.name || '사용자'}
+          </NickName>
+          <DateText>{lastMessageDate}</DateText>
+        </NickNameFrame>
+        <LastChatFrame>
+          <LastChat>{lastMessage}</LastChat>
+          <ProductInfo>{/* 상품 정보 표시 (주석 처리) */}</ProductInfo>
+        </LastChatFrame>
+      </ExplainFrame>
+    </ChatItemContainer>
+  );
+};
+
 const ChatListBox = ({
   refreshing: externalRefreshing,
   onRefresh: externalOnRefresh,
@@ -215,54 +348,12 @@ const ChatListBox = ({
   };
 
   // 외부와 내부 새로고침 함수를 결합
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     if (externalOnRefresh) {
       await externalOnRefresh();
     }
     await handleRefresh();
-  };
-
-  // 날짜 변환 함수 수정 - 전역 Date 객체를 사용
-  const formatDate = dateString => {
-    try {
-      if (!dateString) return '날짜 정보 없음';
-
-      // Date 생성자를 직접 사용하고, 지역 변수로 Date를 선언하지 않음
-      const dateObj = new Date(dateString);
-
-      // 유효한 날짜인지 확인
-      if (isNaN(dateObj.getTime())) {
-        console.log('유효하지 않은 날짜:', dateString);
-        return '날짜 정보 없음';
-      }
-
-      const now = new Date();
-      const diffTime = Math.abs(now - dateObj);
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays === 0) {
-        // 오늘
-        const hours = dateObj.getHours().toString().padStart(2, '0');
-        const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
-      } else if (diffDays < 7) {
-        // 일주일 이내
-        return `${diffDays}일 전`;
-      } else if (diffDays < 30) {
-        // 한 달 이내
-        return `${Math.floor(diffDays / 7)}주 전`;
-      } else if (diffDays < 365) {
-        // 1년 이내
-        return `${Math.floor(diffDays / 30)}달 전`;
-      } else {
-        // 1년 이상
-        return `${Math.floor(diffDays / 365)}년 전`;
-      }
-    } catch (error) {
-      console.error('날짜 변환 오류:', error);
-      return '날짜 정보 없음';
-    }
-  };
+  }, [externalOnRefresh]);
 
   const handleChatRoomPress = chatRoom => {
     try {
@@ -302,66 +393,6 @@ const ChatListBox = ({
     }
   };
 
-  const renderChatRoom = ({item}) => {
-    try {
-      // 필요한 속성이 있는지 먼저 확인
-      if (!item || !item.buyer || !item.seller || !item.item) {
-        console.log('채팅방 데이터 구조 오류:', item);
-        return null;
-      }
-
-      // 현재 사용자가 구매자인지 판매자인지 확인
-      const isBuyer = item.buyer.id === currentUserId;
-      const otherUser = isBuyer ? item.seller : item.buyer;
-
-      // 안전하게 메시지와 날짜 정보 추출
-      let lastMessage = '메시지가 없습니다.';
-      let lastMessageDate = formatDate(item.created_at);
-
-      if (
-        item.messages &&
-        Array.isArray(item.messages) &&
-        item.messages.length > 0
-      ) {
-        lastMessage = item.messages[0].content || '내용 없음';
-        lastMessageDate = formatDate(item.messages[0].created_at);
-      }
-
-      return (
-        <ChatItemContainer onPress={() => handleChatRoomPress(item)}>
-          <IconFrame>
-            <ProfileImage
-              source={{
-                uri:
-                  otherUser.profile_image || 'https://via.placeholder.com/65',
-              }}
-            />
-          </IconFrame>
-          <ExplainFrame>
-            <NickNameFrame>
-              <NickName>{otherUser.name || '사용자'}</NickName>
-              <DateText>{lastMessageDate}</DateText>
-            </NickNameFrame>
-            <LastChatFrame>
-              <LastChat>{lastMessage}</LastChat>
-              <ProductInfo>
-                {/* <ProductThumbnail
-                  source={{uri: 'https://via.placeholder.com/30'}}
-                />
-                <ProductTitle>
-                  {item.item.title || '상품명 없음'}({item.item.value || 0}원)
-                </ProductTitle> */}
-              </ProductInfo>
-            </LastChatFrame>
-          </ExplainFrame>
-        </ChatItemContainer>
-      );
-    } catch (error) {
-      console.error('채팅방 렌더링 오류:', error);
-      return null;
-    }
-  };
-
   if (loading) {
     return (
       <LoadingContainer>
@@ -382,7 +413,13 @@ const ChatListBox = ({
     <Container>
       <FlatList
         data={chatRooms}
-        renderItem={renderChatRoom}
+        renderItem={({item}) => (
+          <ChatItem
+            item={item}
+            currentUserId={currentUserId}
+            onPress={handleChatRoomPress}
+          />
+        )}
         keyExtractor={item => item.id.toString()}
         refreshControl={
           <RefreshControl
