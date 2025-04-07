@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -210,6 +211,7 @@ const RecipeMain = () => {
   const [lowCalorieRecipes, setLowCalorieRecipes] = useState({});
   // 새로운 상태 - 스켈레톤 표시를 위한 초기 로딩 상태
   const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const navigation = useNavigation();
 

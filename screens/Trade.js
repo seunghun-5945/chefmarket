@@ -440,11 +440,33 @@ const Trade = () => {
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     try {
+      const token = await AsyncStorage.getItem('accessToken');
+
+      // 사용자 정보 다시 가져오기
+      const userResponse = await axios.get(
+        'http://3.34.59.23/api/v1/users/me',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      // 위치 정보 업데이트
+      setUserLocation({
+        lat: userResponse.data.location_lat,
+        lon: userResponse.data.location_lon,
+      });
+
+      // 판매 목록 새로고침
       await fetchSalesByLocation();
+    } catch (error) {
+      console.log('새로고침 중 에러 발생', error);
+      Alert.alert('오류', '데이터를 새로고침할 수 없습니다.');
     } finally {
       setRefreshing(false);
     }
-  }, [userLocation]);
+  }, []);
 
   // 카테고리 정의
   const categories = [

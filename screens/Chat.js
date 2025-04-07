@@ -1504,6 +1504,8 @@ const Chat = ({route, navigation}) => {
         채팅방ID: actualChatId,
       });
 
+      setSalesStatus('Trading');
+
       Alert.alert('알림', '도착 알림을 보냈습니다.');
     } catch (error) {
       logMessage('도착 알림 메시지 전송 오류', error.message);

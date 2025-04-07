@@ -4,30 +4,28 @@ require Pod::Executable.execute_command('node', ['-p',
     "react-native/scripts/react_native_pods.rb",
     {paths: [process.argv[1]]},
   )', __dir__]).strip
-
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
+
+# 추가: deterministic_uuids 설정
+install! 'cocoapods', :deterministic_uuids => false
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
-
 target 'chefmarket' do
   config = use_native_modules!
-
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
-
   target 'chefmarketTests' do
     inherit! :complete
     # Pods for testing
   end
-
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
@@ -36,5 +34,31 @@ target 'chefmarket' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # 추가: C++ 호환성 관련 설정
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        # C++ 언어 표준 설정
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        
+        # C++ 템플릿 관련 경고 무시
+        config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        
+        # C++ 표준 라이브러리 하드닝 비활성화
+        config.build_settings['CLANG_CXX_LIBRARY_HARDENING'] = 'NO'
+        
+        # 추가 C++ 플래그
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '-fno-aligned-allocation'
+        
+        # Xcode 16.3 호환성 수정
+        if config.base_configuration_reference && config.base_configuration_reference.real_path
+          xcconfig_path = config.base_configuration_reference.real_path
+          xcconfig = File.read(xcconfig_path)
+          xcconfig_mod = xcconfig.gsub(/DT_TOOLCHAIN_DIR/, "TOOLCHAIN_DIR")
+          File.open(xcconfig_path, "w") { |file| file << xcconfig_mod }
+        end
+      end
+    end
   end
 end
