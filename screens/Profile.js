@@ -614,7 +614,7 @@ const Profile = () => {
             <Icon2 name="sell" size={30} color="#D9534F" />
             <IconText>{'판매\n목록'}</IconText>
           </IconFrame>
-          <IconFrame>
+          <IconFrame onPress={() => navigation.navigate('LikeRecipe')}>
             <Icon name="heart-sharp" size={30} color="#D9534F" />
             <IconText>{'좋아요한\n레시피'}</IconText>
           </IconFrame>

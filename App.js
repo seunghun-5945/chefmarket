@@ -32,6 +32,7 @@ import RatingRecipes from './screens/RatingRecipes';
 import SplashScreen from 'react-native-splash-screen';
 import GroupPurchaseDetail from './screens/GroupPurchasesDetail';
 import GroupChat from './screens/GroupChat';
+import LikeRecipe from './screens/LikeRecipePage';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -273,6 +274,13 @@ const App = () => {
         <Stack.Screen
           name="RatingRecipes"
           component={RatingRecipes}
+          options={{
+            headerLeft: () => null,
+          }}
+        />
+        <Stack.Screen
+          name="LikeRecipe"
+          component={LikeRecipe}
           options={{
             headerLeft: () => null,
           }}
