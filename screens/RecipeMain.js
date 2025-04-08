@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import styled from 'styled-components/native';
 import axios from 'axios';
@@ -210,6 +211,8 @@ const RecipeMain = () => {
   const [lowCalorieRecipes, setLowCalorieRecipes] = useState({});
   // 새로운 상태 - 스켈레톤 표시를 위한 초기 로딩 상태
   const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [key, setKey] = useState(0);
 
   const navigation = useNavigation();
 
@@ -233,6 +236,79 @@ const RecipeMain = () => {
     },
     [navigation],
   );
+
+  useEffect(() => {
+    console.log('recipesData 변경됨:', recipesData);
+    // 필요하다면 추가 로직 수행
+  }, [recipesData]);
+
+  const onRefresh = useCallback(() => {
+    console.log('새로고침 시작'); // 새로고침 시작 로그
+    setRefreshing(true);
+
+    const fetchData = async () => {
+      try {
+        console.log('토큰 가져오는 중...');
+        const token = await AsyncStorage.getItem('accessToken');
+        console.log('토큰:', token ? '토큰 있음' : '토큰 없음');
+
+        if (!token) {
+          console.log('토큰 없음: 새로고침 불가');
+          setRefreshing(false);
+          return;
+        }
+
+        console.log('추천 레시피 API 호출 중...');
+        const recommendationsResponse = await axios.get(
+          'http://3.34.59.23/api/v1/users/me/recommendations',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log('추천 레시피 응답:', recommendationsResponse.data);
+
+        console.log('전체 레시피 API 호출 중...');
+        const recipesResponse = await axios.get(
+          'http://3.34.59.23/api/v1/recipes/',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+        console.log('전체 레시피 응답:', recipesResponse.data);
+
+        // 상태 업데이트
+        setRecipesData(recommendationsResponse.data);
+
+        const allRecipes = Object.values(recipesResponse.data).flat();
+        const lowCalorieRecipes = allRecipes.filter(
+          recipe => recipe.calories >= 10 && recipe.calories <= 100,
+        );
+
+        setAllRecipes(recipesResponse.data);
+        categorizeRecipes(recipesResponse.data);
+        setLowCalorieRecipes(lowCalorieRecipes);
+
+        // 활성 인덱스 초기화
+        setActiveIndex(0);
+
+        console.log('새로고침 완료');
+        setRefreshing(false);
+      } catch (error) {
+        console.error('새로고침 중 오류:', error);
+        setRefreshing(false);
+
+        Alert.alert('새로고침 실패', '데이터를 불러오는 데 실패했습니다.');
+      }
+    };
+
+    fetchData();
+  }, [categorizeRecipes]);
 
   // 검색 함수
   const SearchRecipe = useCallback(
@@ -441,7 +517,7 @@ const RecipeMain = () => {
 
   // 로딩 중에는 스켈레톤 렌더링 대신 실제 UI 렌더링
   return (
-    <Container>
+    <Container key={key}>
       <SearchBar>
         <SearchInput
           onChangeText={text => setSearchText(text)}
@@ -457,7 +533,17 @@ const RecipeMain = () => {
         </IconButton>
       </SearchBar>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#9Bd35A', '#689F38']}
+            tintColor="#ff0000"
+            title="새로고침 중..."
+          />
+        }>
         <HeaderSection>
           <HeaderTitle>이런 요리는 어떠세요?</HeaderTitle>
           <HeaderSubtitle>부엌에서 간편하고 맛있게!</HeaderSubtitle>
@@ -472,6 +558,7 @@ const RecipeMain = () => {
           ) : recipesData && recipesData.length > 0 ? (
             <RecipeCard>
               <Swiper
+                key={`swiper-${JSON.stringify(recipesData)}`} // 데이터 내용 자체로 key 생성
                 from={0}
                 loop
                 timeout={3}
@@ -494,24 +581,25 @@ const RecipeMain = () => {
                       : 'https://via.placeholder.com/400');
 
                   return (
-                    <TouchableWithoutFeedback
-                      key={`recipe-${index}`}
-                      onPress={() => handleRecipeSelect(recipeItem)}>
-                      <View style={{height: 280}}>
-                        <RecipeImage source={{uri: mainImage}} />
-                        <RecipeInfoBar>
-                          <RecipeTitle>
-                            {recipe.name || '레시피 이름'}
-                          </RecipeTitle>
-                        </RecipeInfoBar>
-                        <RecipeInfoBar>
-                          <InfoText>
-                            칼로리 : {recipe.calories || '0'} kcal
-                          </InfoText>
-                          <InfoText>{recipe.category || '0'}</InfoText>
-                        </RecipeInfoBar>
-                      </View>
-                    </TouchableWithoutFeedback>
+                    <View key={`recipe-${index}`} style={{height: 280}}>
+                      <TouchableWithoutFeedback
+                        onPress={() => handleRecipeSelect(recipeItem)}>
+                        <>
+                          <RecipeImage source={{uri: mainImage}} />
+                          <RecipeInfoBar>
+                            <RecipeTitle>
+                              {recipe.name || '레시피 이름'}
+                            </RecipeTitle>
+                          </RecipeInfoBar>
+                          <RecipeInfoBar>
+                            <InfoText>
+                              칼로리 : {recipe.calories || '0'} kcal
+                            </InfoText>
+                            <InfoText>{recipe.category || '0'}</InfoText>
+                          </RecipeInfoBar>
+                        </>
+                      </TouchableWithoutFeedback>
+                    </View>
                   );
                 })}
               </Swiper>
